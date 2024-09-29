@@ -1,12 +1,12 @@
 use mathru::{elementary::power::Power, elementary::trigonometry::Trigonometry};
 use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike, Utc, Duration};
 
-const KE: f64 = 0.0743669161;
+const KE: f64 = 0.07436685316871385;
 const S: f64 = 1.01222928;
 const Q0MS2T: f64 = 0.00000000188027916;
-const J2: f64 = 0.00108264;     // Second Gravitational Zonal Harmonic of the Earth
-const J3: f64 = -0.000253881;   // Third Gravitational Zonal Harmonic of the Earth
-const J4: f64 = -0.000001620;   // Forth Gravitational Zonal Harmonic of the Earth
+const J2: f64 = 0.00108262998905;     // Second Gravitational Zonal Harmonic of the Earth
+const J3: f64 = -0.00000253215306;   // Third Gravitational Zonal Harmonic of the Earth
+const J4: f64 = -0.00000161098761;   // Forth Gravitational Zonal Harmonic of the Earth
 const AE: f64 = 1.0;            // Equatorial radius of the earth
 const K2: f64 = 0.5*J2*AE*AE;
 const K4: f64 = (-3.0/8.0)*J4*AE*AE*AE*AE;
@@ -95,9 +95,9 @@ impl SGP4
 }
 
 // Function to calculate the time difference between two NaiveDateTime in minutes
-pub fn time_since_epoch_in_minutes(epoch: NaiveDateTime, current_time: NaiveDateTime) -> f64 {
+pub fn time_since_epoch_in_seconds(epoch: NaiveDateTime, current_time: NaiveDateTime) -> f64 {
     let duration = current_time - epoch;
-    duration.num_minutes() as f64 + duration.num_seconds() as f64 / 60.0
+    duration.num_seconds() as f64 / 60.0
 }
 
     // Recover original mean motion and semimajor axis from input
@@ -126,9 +126,9 @@ pub fn time_since_epoch_in_minutes(epoch: NaiveDateTime, current_time: NaiveDate
         let delta0 = (3.0/2.0)*(K2 / (a0*a0)) * (temp_delta1/temp_delta2);
 
         self.n02 = n0 / (1.0 + delta0);
-        self.a02 = n0 / (1.0 - delta0);
+        //self.a02 = n0 / (1.0 - delta0);
 
-        println!("{}", delta1);
+        self.a02 = Power::pow(KE/self.n02, 2.0/3.0);
 
         self.set_constants(i0, e0, bstar, w0);
     }
@@ -152,10 +152,13 @@ pub fn time_since_epoch_in_minutes(epoch: NaiveDateTime, current_time: NaiveDate
 
         self.c3 = (Q0MS2T*Power::pow(self.exilon, 5.0)*A30*self.n02*AE* Trigonometry::sin(i0)) / K2*e0;
 
-        self.c4 = 2.0*self.n02 * Q0MS2T*Power::pow(self.exilon, 4.0) * self.a02 * self.b0*self.b0 * Power::pow(1.0-n*n, -3.5) 
+        self.c4 = bstar*2.0*self.n02 * Q0MS2T*Power::pow(self.exilon, 4.0) * self.a02 * self.b0*self.b0 * Power::pow(1.0-n*n, -3.5) 
             * ((2.0*n*(1.0 + e0*n) + 0.5*e0 + 0.5*n*n*n) - ((2.0*K2*self.exilon) / self.a02*(1.0-n*n))
             * (3.0*(1.0 - 3.0*self.phita*self.phita) * (1.0 + 1.5*n*n - 2.0*e0*n - 0.5*e0*n*n*n) + 0.75*(1.0-self.phita*self.phita)
             * (2.0*n*n - e0*n - e0*n*n*n)*Trigonometry::cos(2.0*w0)));
+        // TODO: Why bstar on C4?
+
+        println!("w = {}", w0);
 
         self.c5 = 2.0*Q0MS2T*Power::pow(self.exilon, 4.0) * self.a02 * self.b0*self.b0 * Power::pow(1.0-n*n, -3.5) 
             * (1.0 + (11.0/4.0)*n*(n + e0) + e0*n*n*n);
@@ -165,16 +168,16 @@ pub fn time_since_epoch_in_minutes(epoch: NaiveDateTime, current_time: NaiveDate
         self.d4 = (2.0/3.0) * self.a02 * self.exilon*self.exilon*self.exilon * (221.0*self.a02 + 32.0*S) * self.c1*self.c1*self.c1*self.c1;
 
         
-        println!("Initialized variables: ");
-        println!("  C1 = {}: ", self.c1);
-        println!("  C2 = {}: ", self.c2);
-        println!("  C3 = {}: ", self.c3);
-        println!("  C4 = {}: ", self.c4);
-        println!("  C5 = {}: ", self.c5);
-        println!();
-        println!("  D2 = {}: ", self.d2);
-        println!("  D3 = {}: ", self.d3);
-        println!("  D4 = {}: ", self.d4);
+        // println!("Initialized variables: ");
+        // println!("  C1 = {}: ", self.c1);
+        // println!("  C2 = {}: ", self.c2);
+        // println!("  C3 = {}: ", self.c3);
+        // println!("  C4 = {}: ", self.c4);
+        // println!("  C5 = {}: ", self.c5);
+        // println!();
+        // println!("  D2 = {}: ", self.d2);
+        // println!("  D3 = {}: ", self.d3);
+        // println!("  D4 = {}: ", self.d4);
     }
 
     pub fn update_gravity_and_atm_drag(&mut self, m0: f64, omega0: f64, deltaTime: f64)
@@ -221,50 +224,45 @@ pub fn time_since_epoch_in_minutes(epoch: NaiveDateTime, current_time: NaiveDate
 
         let axn = e*Trigonometry::cos(w);
 
-        let ill = (A30*Trigonometry::sin(self.i0) / 8.0*K2*a*b*b) * e*Trigonometry::cos(w)
+        let ill = ((A30*Trigonometry::sin(self.i0)) / (8.0*K2*a*b*b)) * e*Trigonometry::cos(w)
             * ((3.0+5.0*self.phita) / (1.0+self.phita));
-        let aynl = A30*Trigonometry::sin(self.i0) / 4.0*K2*a*b*b;
+        let aynl = (A30*Trigonometry::sin(self.i0)) / (4.0*K2*a*b*b);
         let ilt = il + ill;
         let ayn = e*Trigonometry::sin(w) + aynl;
 
         // Solve Kepler's equation for (E + w) by defining:
-        let mut u = ilt - omega;    // Going to be reused later, not for U 
+        let mut u = (ilt - omega) % (2.0 * core::f64::consts::PI);    // Going to be reused later, not for U 
 
+        println!("  il = {}: ", il);
+        println!("  ill = {}: ", ill);
+        println!("  u = {}: ", u);
         let mut eo1 = u;
-        let mut temp: f64 = 9999.9;
-        let mut ktr = 1.0;
 
         // And using the iterator equation with:
         //   the following iteration needs better limits on corrections
-        let mut sineo1: f64 = Trigonometry::sin(eo1);
-        let mut coseo1: f64 = Trigonometry::cos(eo1);
-		while ((temp.abs() >= Power::pow(1.0, -12.0)) && (ktr <= 10.0))
+		for _ in 0..10 
 		{
-			sineo1 = Trigonometry::sin(eo1);
-			coseo1 = Trigonometry::cos(eo1);
-			temp = 1.0 - coseo1 * axn - sineo1 * ayn;
-			temp = (u - ayn * coseo1 + axn * sineo1 - eo1) / temp;
+            let delta = (u - ayn*Trigonometry::cos(eo1) + axn*Trigonometry::sin(eo1) - eo1)
+                / (-ayn*Trigonometry::sin(eo1) - axn*Trigonometry::cos(eo1) + 1.0);
 
-			if (temp.abs() >= 0.95)
-            {
-                if (temp > 0.0)
-                {
-                    temp = 0.95;
-                }
-                else
-                {
-
-                }
-				temp = -0.95;
+            if delta.abs() < 1.0e-12 {
+                break;
             }
 
-			eo1 = eo1 + temp;
-			ktr = ktr + 1.0;
+			eo1 += if delta < -0.95 {
+                -0.95
+            } else if delta > 0.95 {
+                0.95
+            } else {
+                delta
+            };
 		}
 
+        println!("  eo1 = {}: ", eo1);
+
         // Calculate preliminary quantities needed por short-period periodics
-        let ecose = axn*coseo1 + ayn*sineo1;
-		let esine = axn*sineo1 - ayn*coseo1;
+        let ecose = axn*Trigonometry::cos(eo1) + ayn*Trigonometry::sin(eo1);
+		let esine = axn*Trigonometry::sin(eo1) - ayn*Trigonometry::cos(eo1);
 		let el2 = axn*axn + ayn*ayn;
 		let pl = a*(1.0 - el2);
 
@@ -273,10 +271,10 @@ pub fn time_since_epoch_in_minutes(epoch: NaiveDateTime, current_time: NaiveDate
         let rdot = KE*(Power::pow(a, 0.5)/r) * esine;
         let rfdot = KE*(pl / r);
 
-        let cosu = (a/r) * (coseo1 - axn + (ayn*esine) / (1.0 + Power::pow(1.0 - el2, 0.5)));
-        let sinu = (a/r) * (sineo1 - ayn + (axn*esine) / (1.0 + Power::pow(1.0 - el2, 0.5)));
+        let cosu = (a/r) * (Trigonometry::cos(eo1) - axn + ayn*(esine / (1.0 + Power::pow(1.0 - el2, 0.5))));
+        let sinu = (a/r) * (Trigonometry::sin(eo1) - ayn - axn*(esine / (1.0 + Power::pow(1.0 - el2, 0.5))));
 
-        u =  Trigonometry::arctan(sinu / cosu);
+        u =  -Trigonometry::arctan(sinu / cosu);
 
         let deltar = (K2 / (2.0*pl)) * (1.0-self.phita*self.phita) * Trigonometry::cos(2.0*u);
         let deltau = -(K2 / (4.0*pl*pl)) * (7.0*self.phita*self.phita - 1.0) * Trigonometry::sin(2.0*u);
@@ -294,19 +292,16 @@ pub fn time_since_epoch_in_minutes(epoch: NaiveDateTime, current_time: NaiveDate
         let rdotk = rdot + deltardot;
         let rfdotk = rfdot + deltarfdot;
 
+        let ux = -Trigonometry::sin(omegak) * Trigonometry::cos(ik) * Trigonometry::sin(uk)
+            + Trigonometry::cos(omegak) * Trigonometry::cos(uk);
+        
 
-        let sinsu = Trigonometry::sin(u);
-        let cossu = Trigonometry::cos(u);
-        let snod = Trigonometry::sin(omegak);
-        let cnod = Trigonometry::cos(omegak);
-        let sini = Trigonometry::sin(ik);
-        let cosi = Trigonometry::cos(ik);
-        let xmx = -snod * cosi;
-        let xmy = cnod * cosi;
+        let rx = (rk * ux)* 6378.137;
 
-        println!("  omegak = {}: ", (omegak*180.0) / 3.14);
-        println!("  ik = {}: ", (ik*180.0) / 3.14);
-        println!("  uk = {}: ", (uk*180.0) / 3.14);
-        println!("  rk = {}: ", rk);
+        println!("  ux = {}: ", ux);
+
+        println!("  rx = {}: ", rx);
+        // println!("  ry = {}: ", ry);
+        // println!("  rz = {}: ", rz);
     }
 }
