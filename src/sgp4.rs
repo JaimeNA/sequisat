@@ -205,8 +205,8 @@ pub fn time_since_epoch_in_seconds(epoch: NaiveDateTime, current_time: NaiveDate
         let mp = mdf + deltaw + deltaM;
 
         let w = wdf - deltaw - deltaM;
-        let omega = omegadf - (21.0/2.0)*(self.n02*K2*self.phita / self.a02*self.a02*self.b0*self.b0)
-                * self.c2*deltaTime;
+        let omega = omegadf - (21.0/2.0)*((self.n02*K2*self.phita) / (self.a02*self.a02*self.b0*self.b0))
+                * self.c1*deltaTime*deltaTime;
         let e = self.e0 - self.bstar*self.c4*deltaTime
             - self.bstar*self.c5*(Trigonometry::sin(mp) - Trigonometry::sin(m0));
         let a = self.a02*Power::pow((1.0 - self.c1*deltaTime - self.d2*deltaTime*deltaTime - self.d3*Power::pow(deltaTime, 3.0)
@@ -233,8 +233,8 @@ pub fn time_since_epoch_in_seconds(epoch: NaiveDateTime, current_time: NaiveDate
         // Solve Kepler's equation for (E + w) by defining:
         let mut u = (ilt - omega) % (2.0 * core::f64::consts::PI);    // Going to be reused later, not for U 
 
-        println!("  il = {}: ", il);
-        println!("  ill = {}: ", ill);
+        println!("  ilt = {}: ", ilt);
+        println!("  omega = {}: ", omega);
         println!("  u = {}: ", u);
         let mut eo1 = u;
 
