@@ -2,7 +2,7 @@ use mathru::{elementary::power::Power, elementary::trigonometry::Trigonometry};
 use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike, Utc, Duration};
 
 const KE: f64 = 0.07436685316871385;
-const S: f64 = 1.01222928;
+const S: f64 = 1.0122292763545218;
 const Q0MS2T: f64 = 0.00000000188027916;
 const J2: f64 = 0.00108262998905;     // Second Gravitational Zonal Harmonic of the Earth
 const J3: f64 = -0.00000253215306;   // Third Gravitational Zonal Harmonic of the Earth
@@ -136,12 +136,10 @@ pub fn time_since_epoch_in_seconds(epoch: NaiveDateTime, current_time: NaiveDate
     pub fn set_constants(&mut self, i0: f64, e0: f64, bstar: f64, w0: f64)
     {
         self.e0 = e0;
-
         self.phita = Trigonometry::cos(i0);
         self.exilon = 1.0 / (self.a02 - S);
         self.b0 = Power::pow(1.0 - e0*e0, 0.5);
         let n = self.a02 * e0 * self.exilon;
-
         self.n = n; // TODO: refactor
 
         self.c2 = Q0MS2T*Power::pow(self.exilon, 4.0) * self.n02 * Power::pow(1.0 - n*n, -7.0/2.0)
@@ -157,9 +155,7 @@ pub fn time_since_epoch_in_seconds(epoch: NaiveDateTime, current_time: NaiveDate
             * (3.0*(1.0 - 3.0*self.phita*self.phita) * (1.0 + 1.5*n*n - 2.0*e0*n - 0.5*e0*n*n*n) + 0.75*(1.0-self.phita*self.phita)
             * (2.0*n*n - e0*n - e0*n*n*n)*Trigonometry::cos(2.0*w0)));
         // TODO: Why bstar on C4?
-
-        println!("w = {}", w0);
-
+        
         self.c5 = 2.0*Q0MS2T*Power::pow(self.exilon, 4.0) * self.a02 * self.b0*self.b0 * Power::pow(1.0-n*n, -3.5) 
             * (1.0 + (11.0/4.0)*n*(n + e0) + e0*n*n*n);
 
@@ -167,17 +163,6 @@ pub fn time_since_epoch_in_seconds(epoch: NaiveDateTime, current_time: NaiveDate
         self.d3 = (4.0/3.0)*self.a02 * self.exilon*self.exilon * (17.0*self.a02 + S) * self.c1*self.c1*self.c1;
         self.d4 = (2.0/3.0) * self.a02 * self.exilon*self.exilon*self.exilon * (221.0*self.a02 + 32.0*S) * self.c1*self.c1*self.c1*self.c1;
 
-        
-        // println!("Initialized variables: ");
-        // println!("  C1 = {}: ", self.c1);
-        // println!("  C2 = {}: ", self.c2);
-        // println!("  C3 = {}: ", self.c3);
-        // println!("  C4 = {}: ", self.c4);
-        // println!("  C5 = {}: ", self.c5);
-        // println!();
-        // println!("  D2 = {}: ", self.d2);
-        // println!("  D3 = {}: ", self.d3);
-        // println!("  D4 = {}: ", self.d4);
     }
 
     pub fn update_gravity_and_atm_drag(&mut self, m0: f64, omega0: f64, deltaTime: f64)
@@ -222,6 +207,8 @@ pub fn time_since_epoch_in_seconds(epoch: NaiveDateTime, current_time: NaiveDate
 
         //Add the long-period periodic terms
 
+        println!("  e = {}: ", e);
+        println!("  w = {}: ", w);
         let axn = e*Trigonometry::cos(w);
 
         let ill = ((A30*Trigonometry::sin(self.i0)) / (8.0*K2*a*b*b)) * e*Trigonometry::cos(w)
@@ -231,18 +218,18 @@ pub fn time_since_epoch_in_seconds(epoch: NaiveDateTime, current_time: NaiveDate
         let ayn = e*Trigonometry::sin(w) + aynl;
 
         // Solve Kepler's equation for (E + w) by defining:
-        let mut u = (ilt - omega) % (2.0 * core::f64::consts::PI);    // Going to be reused later, not for U 
+        let mut up = (ilt - omega) % (2.0 * core::f64::consts::PI);    // Going to be reused later, not for U 
 
-        println!("  ilt = {}: ", ilt);
-        println!("  omega = {}: ", omega);
-        println!("  u = {}: ", u);
-        let mut eo1 = u;
+        println!("  axn = {}: ", axn);
+        println!("  ayn = {}: ", ayn);
+        println!("  up = {}: ", ilt - omega);
+        let mut eo1 = up;
 
         // And using the iterator equation with:
         //   the following iteration needs better limits on corrections
 		for _ in 0..10 
 		{
-            let delta = (u - ayn*Trigonometry::cos(eo1) + axn*Trigonometry::sin(eo1) - eo1)
+            let delta = (up - ayn*Trigonometry::cos(eo1) + axn*Trigonometry::sin(eo1) - eo1)
                 / (-ayn*Trigonometry::sin(eo1) - axn*Trigonometry::cos(eo1) + 1.0);
 
             if delta.abs() < 1.0e-12 {
@@ -259,7 +246,6 @@ pub fn time_since_epoch_in_seconds(epoch: NaiveDateTime, current_time: NaiveDate
 		}
 
         println!("  eo1 = {}: ", eo1);
-
         // Calculate preliminary quantities needed por short-period periodics
         let ecose = axn*Trigonometry::cos(eo1) + ayn*Trigonometry::sin(eo1);
 		let esine = axn*Trigonometry::sin(eo1) - ayn*Trigonometry::cos(eo1);
@@ -271,13 +257,13 @@ pub fn time_since_epoch_in_seconds(epoch: NaiveDateTime, current_time: NaiveDate
         let rdot = KE*(Power::pow(a, 0.5)/r) * esine;
         let rfdot = KE*(pl / r);
 
-        let cosu = (a/r) * (Trigonometry::cos(eo1) - axn + ayn*(esine / (1.0 + Power::pow(1.0 - el2, 0.5))));
-        let sinu = (a/r) * (Trigonometry::sin(eo1) - ayn - axn*(esine / (1.0 + Power::pow(1.0 - el2, 0.5))));
+        let cosu = (a/r) * (Trigonometry::cos(eo1) - axn + ayn*(esine / (1.0 + (1.0 - el2).sqrt())));
+        let sinu = (a/r) * (Trigonometry::sin(eo1) - ayn - axn*(esine / (1.0 + (1.0 - el2).sqrt())));
 
-        u =  -Trigonometry::arctan(sinu / cosu);
+        let u =  Trigonometry::arctan(sinu / cosu);
 
         let deltar = (K2 / (2.0*pl)) * (1.0-self.phita*self.phita) * Trigonometry::cos(2.0*u);
-        let deltau = -(K2 / (4.0*pl*pl)) * (7.0*self.phita*self.phita - 1.0) * Trigonometry::sin(2.0*u);
+        let deltau = -0.25 * (K2 / (pl*pl)) * (7.0*self.phita*self.phita - 1.0) * Trigonometry::sin(2.0*u);
         let deltaomega = ((3.0*K2*self.phita) / (2.0*pl*pl)) * Trigonometry::sin(2.0*u);
         let deltai = ((3.0*K2*self.phita) / (2.0*pl*pl)) * Trigonometry::sin(self.i0) * Trigonometry::cos(2.0*u);
         let deltardot = -((K2*n1) / pl) * (1.0-self.phita*self.phita) * Trigonometry::sin(2.0*u); // Note that n1 is the actual n and n is the greek n-like letter
@@ -296,9 +282,7 @@ pub fn time_since_epoch_in_seconds(epoch: NaiveDateTime, current_time: NaiveDate
             + Trigonometry::cos(omegak) * Trigonometry::cos(uk);
         
 
-        let rx = (rk * ux)* 6378.137;
-
-        println!("  ux = {}: ", ux);
+        let rx = rk * ux * 6378.137;
 
         println!("  rx = {}: ", rx);
         // println!("  ry = {}: ", ry);
