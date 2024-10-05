@@ -124,9 +124,10 @@ impl SGP4
 
         let delta0 = (3.0/2.0)*(K2 / (a0*a0)) * (temp_delta1/temp_delta2);
 
-        self.n02 = n0;
+        self.n02 = n0 / (1.0 + delta0);
         //self.a02 = n0 / (1.0 - delta0);
 
+        //self.n02 = n0;
         self.a02 = (KE/self.n02).powf(2.0/3.0);
 
         self.set_constants(i0, e0, bstar, w0);
@@ -294,6 +295,7 @@ impl SGP4
         println!("  rz = {}: ", rz);
         println!("  ---  ");
         println!("  altitude = {}: ", altitude - 6378.137);
-        println!("  laltitude = {}: ", (latitude * 180.0) / core::f64::consts::PI);
+        println!("  latitude = {}: ", (latitude * 180.0) / core::f64::consts::PI);
+        println!("  longitud = {}: ", (ry.atan2(rx) * 180.0) / core::f64::consts::PI);
     }
 }
