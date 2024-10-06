@@ -1,4 +1,4 @@
-use mathru::{elementary::power::Power, elementary::trigonometry::Trigonometry};
+
 use chrono::prelude::*;
 
 const KE: f64 = 0.07436685316871385;
@@ -65,38 +65,7 @@ impl SGP4
 
     // Function to calculate the time difference between two NaiveDateTime in minutes
     pub fn time_since_epoch_in_minutes() -> f64 {
-        // Parse the TLE epoch in YYDDD.DDDDDDDD format
-        let year_part = 24;
-        let day_of_year_part = 274;
-        let fractional_day_part = 0.84428341;
-
-        // Handle YY (TLE epoch year part)
-        let current_year = Utc::now().year() % 100; // Get current year last two digits
-        let full_year = if year_part <= current_year {
-            2000 + year_part
-        } else {
-            1900 + year_part
-        };
-
-        // Convert the day of the year to a NaiveDate
-        let tle_date = NaiveDate::from_yo(full_year, day_of_year_part);
-
-        // Calculate the time from the fractional day part (fraction of 24 hours)
-        let seconds_in_day = 86400.0 * fractional_day_part;
-        let tle_time = NaiveTime::from_num_seconds_from_midnight(seconds_in_day as u32, 0);
-
-        // Create a full TLE epoch DateTime in UTC
-        let tle_datetime = Utc
-            .from_utc_datetime(&NaiveDate::and_time(&tle_date, tle_time))
-            .with_timezone(&Utc);
-
-        // Get the current time in UTC
-        let now = Utc::now();
-
-        // Calculate the delta in minutes
-        let delta = now.signed_duration_since(tle_datetime).num_seconds() as f64 / 60.0;
-
-        delta
+        0.0
     }
 
     // Recover original mean motion and semimajor axis from input
@@ -124,10 +93,9 @@ impl SGP4
 
         let delta0 = (3.0/2.0)*(K2 / (a0*a0)) * (temp_delta1/temp_delta2);
 
-        self.n02 = n0 / (1.0 + delta0);
-        //self.a02 = n0 / (1.0 - delta0);
+        //self.n02 = n0 / (1.0 + delta0);
 
-        //self.n02 = n0;
+        self.n02 = n0;
         self.a02 = (KE/self.n02).powf(2.0/3.0);
 
         self.set_constants(i0, e0, bstar, w0);
@@ -216,7 +184,7 @@ impl SGP4
         let ayn = e*w.sin() + aynl;
 
         // Solve Kepler's equation for (E + w) by defining:
-        let mut up = (ilt - omega) % (2.0 * core::f64::consts::PI);    // Going to be reused later, not for U 
+        let up = (ilt - omega) % (2.0 * core::f64::consts::PI);    // Going to be reused later, not for U 
 
         println!("  axn = {}: ", axn);
         println!("  ayn = {}: ", ayn);
@@ -296,6 +264,6 @@ impl SGP4
         println!("  ---  ");
         println!("  altitude = {}: ", altitude - 6378.137);
         println!("  latitude = {}: ", (latitude * 180.0) / core::f64::consts::PI);
-        println!("  longitud = {}: ", (ry.atan2(rx) * 180.0) / core::f64::consts::PI);
+        println!("  longitud = {}: ", ((ry/rx).atan() * 180.0) / core::f64::consts::PI);
     }
 }
