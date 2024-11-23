@@ -20,10 +20,16 @@ fn main() {
     let orbit_0 = Orbit::from_tle(tle);
     let mut iss = sgp4::SGP4::new(orbit_0);
 
-    iss.set_constants();
+    iss.calculate_constants();
 
     iss.print_data();
 
+    //for hours in 0..24 {
+    //    println!("t = {} min", hours * 60);
+    //    iss.update_gravity_and_atm_drag((hours * 60) as f64);
+        //println!("    ṙ = {:?} km.s⁻¹", prediction.velocity);
+    //}
+    
     // Set the update interval (e.g., 1 second)
     let update_interval = StdDuration::from_secs(1);
 

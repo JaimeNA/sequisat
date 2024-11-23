@@ -67,11 +67,26 @@ impl SGP4
         println!("D3:  {}", self.d3);
         println!("D4:  {}", self.d4);
     }
-
-    pub fn set_constants(&mut self)
+    
+    pub fn semimayor_axis(&self) -> f64 
     {
-        self.semimayor_axis = (KE/self.orbit_0.mean_motion).powf(2.0/3.0);
+        let a1 = (KE/self.orbit_0.mean_motion).powf(2.0/3.0);
 
+        let d_aux = (3.0/2.0) * (K2 * (3.0*(self.orbit_0.inclination.cos()).powi(2) - 1.0))
+            / ((1.0 - self.orbit_0.eccentricity.powi(2)).powf(3.0/2.0));
+
+        let d1 = d_aux / (a1*a1);
+
+        let a0 = a1 * (1.0 - (1.0/3.0)*d1 - d1*d1 - (134.0/81.0)*d1.powi(3));
+
+        let d0 = d_aux / (a0*a0);
+
+        return a0 / (1.0 - d0);
+    }
+
+    pub fn calculate_constants(&mut self)
+    {
+        self.semimayor_axis = self.semimayor_axis();
         // TODO: Calculate S constant depending on the perigee
 
         self.phita = self.orbit_0.inclination.cos();
@@ -88,7 +103,8 @@ impl SGP4
 
         self.c3 = (Q0MS2T*self.exilon.powi(5)*A30*self.orbit_0.mean_motion*AE * self.orbit_0.inclination.sin()) / (K2*self.orbit_0.eccentricity);
 
-        self.c4 = 2.0*self.orbit_0.mean_motion * Q0MS2T * self.exilon.powi(4) * self.semimayor_axis * self.beta0*self.beta0 * (1.0 - self.eta*self.eta).powf(-3.5) 
+        // Why bstar on C4???
+        self.c4 = self.orbit_0.drag_term*2.0*self.orbit_0.mean_motion * Q0MS2T * self.exilon.powi(4) * self.semimayor_axis * self.beta0*self.beta0 * (1.0 - self.eta*self.eta).powf(-3.5) 
             * ((2.0*self.eta*(1.0 + self.orbit_0.eccentricity*self.eta) + 0.5*self.orbit_0.eccentricity + 0.5*self.eta.powi(3))
             - ((2.0*K2*self.exilon) / (self.semimayor_axis*(1.0-self.eta*self.eta)))
             * (3.0*(1.0 - 3.0*self.phita*self.phita) * (1.0 + 1.5*self.eta*self.eta - 2.0*self.orbit_0.eccentricity*self.eta - 0.5*self.orbit_0.eccentricity*self.eta.powi(3))
