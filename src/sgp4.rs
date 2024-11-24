@@ -118,7 +118,7 @@ impl SGP4
             + 0.75*(1.0-self.phita*self.phita)
             * (2.0*self.eta*self.eta - self.orbit_0.eccentricity*self.eta - self.orbit_0.eccentricity*self.eta.powi(3)) * (2.0*self.orbit_0.argument_of_perigee).cos()));
         
-        self.c5 = 2.0*Q0MS2T * self.exilon.powi(4) * self.semimayor_axis * self.beta0*self.beta0 * (1.0 - self.eta*self.eta).powf(-3.5) 
+        self.c5 = 2.0 * coef1 * self.semimayor_axis * self.beta0*self.beta0 
             * (1.0 + (11.0/4.0)*self.eta*(self.eta + self.orbit_0.eccentricity) + self.orbit_0.eccentricity*self.eta.powi(3));
 
         self.d2 = 4.0 * self.semimayor_axis * self.exilon * self.c1*self.c1;
@@ -132,21 +132,21 @@ impl SGP4
         let mdf = self.orbit_0.mean_anomaly + (1.0 + (3.0*K2 * (-1.0+3.0*self.phita*self.phita))/(2.0*self.semimayor_axis*self.semimayor_axis*self.beta0.powi(3))
             + (3.0*K2*K2 * (13.0 - 78.0*self.phita*self.phita + 137.0*self.phita.powi(4)))/(16.0*self.semimayor_axis.powi(4)*self.beta0.powi(7)))
             * self.orbit_0.mean_motion*deltaTime;
-
+ 
         let wdf = self.orbit_0.argument_of_perigee + (-(3.0*K2 * (1.0-5.0*self.phita*self.phita))/(2.0*self.semimayor_axis*self.semimayor_axis*self.beta0.powi(4)) 
-            + (3.0*K2*K2 * (7.0 - 114.0*self.phita*self.phita + 395.0*self.phita.powi(4)))/(16.0*self.semimayor_axis.powi(4)*self.phita.powi(4))
-            + (5.0*K4 * (3.0-36.0*self.phita*self.phita+49.0*self.phita.powi(4)))/(16.0*self.semimayor_axis.powi(4)*self.beta0.powi(8)))
+            + (3.0*K2*K2 * (7.0 - 114.0*self.phita*self.phita + 395.0*self.phita.powi(4)))/(16.0*self.semimayor_axis.powi(4)*self.beta0.powi(7))
+            + (5.0*K4 * (3.0-36.0*self.phita*self.phita+49.0*self.phita.powi(4)))/(4.0*self.semimayor_axis.powi(4)*self.beta0.powi(8)))
             * self.orbit_0.mean_motion*deltaTime;
 
-        let omegadf = self.orbit_0.right_ascension + (-(3.0*K2*self.phita)/(self.semimayor_axis*self.semimayor_axis*self.beta0.powi(4))
-            + (3.0*K2*K2*(4.0*self.phita - 19.0*self.phita.powi(3)))/(2.0*self.semimayor_axis.powi(4)*self.beta0.powi(8))
+        let omegadf = self.orbit_0.right_ascension + (-( 3.0*K2*self.phita ) / ( self.semimayor_axis*self.semimayor_axis*self.beta0.powi(4) )
+            + ( 3.0*K2*K2*(4.0*self.phita - 19.0*self.phita.powi(3)) ) / ( 2.0*self.semimayor_axis.powi(4)*self.beta0.powi(8) )
             + (5.0*K4*self.phita*(3.0 - 7.0*self.phita*self.phita))/(2.0*self.semimayor_axis.powi(4)*self.beta0.powi(8)))
             * self.orbit_0.mean_motion*deltaTime;
 
         let deltaw = self.orbit_0.drag_term * self.c3 * self.orbit_0.argument_of_perigee.cos() * deltaTime;
         let deltaM = -(2.0/3.0) * Q0MS2T * self.orbit_0.drag_term * self.exilon.powi(4)
-                * (AE / (self.orbit_0.eccentricity*self.eta)) * ((1.0 + self.eta*mdf.cos()).powi(3)
-                - (1.0 + self.eta*self.orbit_0.mean_anomaly.cos()).powi(3));
+                * (AE / (self.orbit_0.eccentricity*self.eta)) 
+                * ((1.0 + self.eta*mdf.cos()).powi(3) - (1.0 + self.eta*self.orbit_0.mean_anomaly.cos()).powi(3));
 
         let mp = mdf + deltaw + deltaM;
 
@@ -158,7 +158,7 @@ impl SGP4
         let a = self.semimayor_axis*(1.0 - self.c1*deltaTime - self.d2*deltaTime*deltaTime - self.d3*deltaTime.powi(3)
             - self.d4*deltaTime.powi(4)).powi(2);
 
-        let il = mp + w + omega + self.eta*(1.5*self.c1*deltaTime*deltaTime + (self.d2+2.0*self.c2*self.c2)*deltaTime.powi(3)
+        let il = mp + w + omega + self.orbit_0.mean_motion*(1.5*self.c1*deltaTime*deltaTime + (self.d2+2.0*self.c1*self.c1)*deltaTime.powi(3)
             + 0.25*(3.0*self.d3 + 12.0*self.c1*self.d2 + 10.0*self.c1.powi(3))*deltaTime.powi(4)
             + 0.2*(3.0*self.d4 + 12.0*self.c1*self.d3 + 6.0*self.d2*self.d2 + 30.0*self.c1*self.c1*self.d2 + 15.0*self.c1.powi(4))
             *deltaTime.powi(5));
@@ -240,45 +240,45 @@ impl SGP4
         let uz = ik.sin() * uk.sin();
         
 
-        let rx = rk * ux * 6378.137;
-        let ry = rk * uy * 6378.137;
-        let rz = rk * uz * 6378.137;
+        let rx = rk * ux;
+        let ry = rk * uy;
+        let rz = rk * uz;
 
         let radius = (rx*rx + ry*ry + rz*rz).sqrt();
-        let latitude =
+        let longitude =
         {
             if (ry > 0.0) {
-                if (rx >= 0.0)
+                if (rx < 0.0)
                 {
                     (ry/rx).atan()
                 }
                 else
                 {
-                    (ry/-rx).atan() + core::f64::consts::PI
+                    (ry/rx).atan() + core::f64::consts::PI/2.0
                 }
             } 
             else
             {
-                if (rx >= 0.0)
+                if (rx < 0.0)
                 {
-                    -(-ry/rx).atan()
+                    -(ry/rx).atan()
                 }
                 else
                 {
-                    -(-ry/-rx).atan() + core::f64::consts::PI
+                    -((ry/rx).atan() + core::f64::consts::PI/2.0)
                 }
 
             }
         };
 
 
-        let longitude = (rz.abs() / (rx*rx + ry*ry).sqrt()).atan();
+        let latitude = (rz.abs() / (rx*rx + ry*ry).sqrt()).atan();
 
         print!("  rx = {}: ", rx);
         print!("  ry = {}: ", ry);
         println!("  rz = {}: ", rz);
         println!("  ---  ");
-        println!("  altitude = {}: ", radius - 6378.137);
+        println!("  altitude = {}: ", (radius - 1.0) * 6378.0);
         println!("  latitude = {}: ", latitude * (180.0 / core::f64::consts::PI));
         println!("  longitude = {}: ", longitude * (180.0 / core::f64::consts::PI));
     }

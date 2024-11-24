@@ -100,11 +100,11 @@ impl TLE
         println!("Epoch Day Of Year:          {}", self.epoch_day);
         println!("Ballistic Coefficient:      {}", self.ballistic_coefficient);
         println!("Drag Term:                  {}", self.drag_term);
-        println!("Inclination(radians):       {}", self.inclination);
-        println!("Right Ascension(radians):   {}", self.right_ascension);
+        println!("Inclination(rads):          {}", self.inclination);
+        println!("Right Ascension(rads):      {}", self.right_ascension);
         println!("Eeccentricity:              {}", self.eccentricity);
-        println!("Argument of Perigee:        {}", self.argument_of_perigee);
-        println!("Mean Anomaly(radians):      {}", self.mean_anomaly);
+        println!("Argument of Perigee(rads):  {}", self.argument_of_perigee);
+        println!("Mean Anomaly(rads):         {}", self.mean_anomaly);
         println!("Mean Motion(radians/min):   {}", self.mean_motion);
     }
 
@@ -210,7 +210,8 @@ impl TLE
 
         // Argument of Perigee
         current_column = columns.next().unwrap();
-        let argument_of_perigee = current_column.parse::<f64>().unwrap();
+        let argument_of_perigee = (current_column.parse::<f64>().unwrap() * core::f64::consts::PI) / 180.0;
+
         
         // Mean Anomaly (radians)
         current_column = columns.next().unwrap();
