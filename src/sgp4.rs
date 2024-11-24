@@ -6,6 +6,7 @@ use crate::sgp4_propagator::Orbit;
 
 const KE: f64 = 0.07436685316871385;
 const S: f64 = 1.0122292763545218;
+const ER: f64 = 6371.0;
 const Q0MS2T: f64 = 0.00000000188027916;
 const J2: f64 = 0.00108262998905;     // Second Gravitational Zonal Harmonic of the Earth
 const J3: f64 = -0.00000253215306;   // Third Gravitational Zonal Harmonic of the Earth
@@ -68,7 +69,7 @@ impl SGP4
         println!("D4:  {}", self.d4);
     }
     
-    pub fn semimayor_axis(&self) -> f64 
+    pub fn semimayor_axis(&mut self) -> f64 
     {
         let a1 = (KE/self.orbit_0.mean_motion).powf(2.0/3.0);
 
@@ -80,6 +81,8 @@ impl SGP4
         let a0 = a1 * (1.0 - (1.0/3.0)*d1 - d1*d1 - (134.0/81.0)*d1.powi(3));
 
         let d0 = d_aux / (a0*a0);
+
+        self.orbit_0.mean_motion = self.orbit_0.mean_motion / (1.0 + d0);   // EXPERIMENTAL
 
         return a0 / (1.0 - d0);
     }
@@ -94,19 +97,23 @@ impl SGP4
         self.beta0 = (1.0 - self.orbit_0.eccentricity.powi(2)).sqrt();
         self.eta = self.semimayor_axis * self.orbit_0.eccentricity * self.exilon;
 
-        self.c2 = Q0MS2T*self.exilon.powi(4) * self.orbit_0.mean_motion * (1.0 - self.eta*self.eta).powf(-3.5)
+        let psisq = (1.0 - self.eta*self.eta).abs();
+
+        let coef = Q0MS2T*self.exilon.powi(4);
+        let coef1 = coef / (psisq.powf(3.5));
+
+        self.c2 = coef1 * self.orbit_0.mean_motion
             * (self.semimayor_axis*(1.0 + 1.5*self.eta*self.eta + 4.0*self.orbit_0.eccentricity*self.eta + self.orbit_0.eccentricity*self.eta.powi(3))
             + 1.5*((K2*self.exilon)/(1.0-self.eta*self.eta))
             * (-0.5+1.5*self.phita*self.phita) * (8.0 + 24.0*self.eta*self.eta + 3.0*self.eta.powi(4)));
 
         self.c1 = self.orbit_0.drag_term*self.c2;
 
-        self.c3 = (Q0MS2T*self.exilon.powi(5)*A30*self.orbit_0.mean_motion*AE * self.orbit_0.inclination.sin()) / (K2*self.orbit_0.eccentricity);
+        self.c3 = (coef * self.exilon * A30 * self.orbit_0.mean_motion * AE * self.orbit_0.inclination.sin()) / (K2*self.orbit_0.eccentricity);
 
-        // Why bstar on C4???
-        self.c4 = self.orbit_0.drag_term*2.0*self.orbit_0.mean_motion * Q0MS2T * self.exilon.powi(4) * self.semimayor_axis * self.beta0*self.beta0 * (1.0 - self.eta*self.eta).powf(-3.5) 
+        self.c4 = 2.0*self.orbit_0.mean_motion * coef1 * self.semimayor_axis * self.beta0*self.beta0 
             * ((2.0*self.eta*(1.0 + self.orbit_0.eccentricity*self.eta) + 0.5*self.orbit_0.eccentricity + 0.5*self.eta.powi(3))
-            - ((2.0*K2*self.exilon) / (self.semimayor_axis*(1.0-self.eta*self.eta)))
+            - ((2.0*K2*self.exilon) / (self.semimayor_axis*psisq))
             * (3.0*(1.0 - 3.0*self.phita*self.phita) * (1.0 + 1.5*self.eta*self.eta - 2.0*self.orbit_0.eccentricity*self.eta - 0.5*self.orbit_0.eccentricity*self.eta.powi(3))
             + 0.75*(1.0-self.phita*self.phita)
             * (2.0*self.eta*self.eta - self.orbit_0.eccentricity*self.eta - self.orbit_0.eccentricity*self.eta.powi(3)) * (2.0*self.orbit_0.argument_of_perigee).cos()));
@@ -238,25 +245,41 @@ impl SGP4
         let rz = rk * uz * 6378.137;
 
         let radius = (rx*rx + ry*ry + rz*rz).sqrt();
-        let latitude = (rz/radius).asin();
-
-        let longitude = 
+        let latitude =
         {
-            if (rx > 0.0) {
-                (ry/rx).atan()*(180.0 / core::f64::consts::PI)
-            } else if (ry > 0.0) {
-                (ry/rx).atan()*(180.0 / core::f64::consts::PI) + 180.0
-            } else {
-                (ry/rx).atan()*(180.0 / core::f64::consts::PI) - 180.0
+            if (ry > 0.0) {
+                if (rx >= 0.0)
+                {
+                    (ry/rx).atan()
+                }
+                else
+                {
+                    (ry/-rx).atan() + core::f64::consts::PI
+                }
+            } 
+            else
+            {
+                if (rx >= 0.0)
+                {
+                    -(-ry/rx).atan()
+                }
+                else
+                {
+                    -(-ry/-rx).atan() + core::f64::consts::PI
+                }
+
             }
         };
+
+
+        let longitude = (rz.abs() / (rx*rx + ry*ry).sqrt()).atan();
 
         print!("  rx = {}: ", rx);
         print!("  ry = {}: ", ry);
         println!("  rz = {}: ", rz);
         println!("  ---  ");
         println!("  altitude = {}: ", radius - 6378.137);
-        println!("  latitude = {}: ", latitude *(180.0 / core::f64::consts::PI));
-        println!("  longitude = {}: ", longitude);
+        println!("  latitude = {}: ", latitude * (180.0 / core::f64::consts::PI));
+        println!("  longitude = {}: ", longitude * (180.0 / core::f64::consts::PI));
     }
 }
