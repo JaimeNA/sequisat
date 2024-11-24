@@ -69,7 +69,7 @@ impl SGP4
         println!("D4:  {}", self.d4);
     }
     
-    pub fn semimayor_axis(&mut self) -> f64 
+    pub fn recover_a02_n02(&mut self) 
     {
         let a1 = (KE/self.orbit_0.mean_motion).powf(2.0/3.0);
 
@@ -82,15 +82,14 @@ impl SGP4
 
         let d0 = d_aux / (a0*a0);
 
-        self.orbit_0.mean_motion = self.orbit_0.mean_motion / (1.0 + d0);   // EXPERIMENTAL
+        self.orbit_0.mean_motion = self.orbit_0.mean_motion / (1.0 + d0);
 
-        return a0 / (1.0 - d0);
+        self.semimayor_axis = a0 / (1.0 - d0);
     }
 
     pub fn calculate_constants(&mut self)
     {
-        self.semimayor_axis = self.semimayor_axis();
-        // TODO: Calculate S constant depending on the perigee
+        self.recover_a02_n02();
 
         self.phita = self.orbit_0.inclination.cos();
         self.exilon = 1.0 / (self.semimayor_axis - S);
@@ -274,9 +273,9 @@ impl SGP4
 
         let latitude = (rz.abs() / (rx*rx + ry*ry).sqrt()).atan();
 
-        print!("  rx = {}: ", rx);
-        print!("  ry = {}: ", ry);
-        println!("  rz = {}: ", rz);
+        print!("  rx = {}: ", rx * 6378.137);
+        print!("  ry = {}: ", ry * 6378.137);
+        println!("  rz = {}: ", rz * 6378.137);
         println!("  ---  ");
         println!("  altitude = {}: ", (radius - 1.0) * 6378.0);
         println!("  latitude = {}: ", latitude * (180.0 / core::f64::consts::PI));

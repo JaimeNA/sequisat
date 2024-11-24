@@ -12,7 +12,7 @@ use std::time::Duration as StdDuration;
 
 fn main() {
 
-    let tle = TLE::from_file("noaa.tle");
+    let tle = TLE::from_file("sample.tle");
     tle.print_data();
     let epoch_year = tle.epoch_year;
     let epoch_day = tle.epoch_day;
@@ -24,30 +24,30 @@ fn main() {
 
     iss.print_data();
 
-    //for hours in 0..24 {
-    //    println!("t = {} min", hours * 60);
-    //    iss.update_gravity_and_atm_drag((hours * 60) as f64);
+    for hours in 0..24 {
+        println!("t = {} min", hours * 60);
+        iss.update_gravity_and_atm_drag((hours * 60) as f64);
         //println!("    ṙ = {:?} km.s⁻¹", prediction.velocity);
-    //}
+    }
     
     // Set the update interval (e.g., 1 second)
     let update_interval = StdDuration::from_secs(1);
 
     // Start the continuous update loop
-    loop {
+    //loop {
         // Get the current time (UTC)
-        let current_time = Utc::now().naive_utc();
+    //    let current_time = Utc::now().naive_utc();
 
         // Calculate the time since the epoch in minutes
-        let time_since_epoch = time_since_epoch_in_minutes(epoch_year, epoch_day);
+    //    let time_since_epoch = time_since_epoch_in_minutes(epoch_year, epoch_day);
 
         // Display the result
-        println!("Time since epoch: {} minutes", time_since_epoch);
-        iss.update_gravity_and_atm_drag(time_since_epoch);
+    //    println!("Time since epoch: {} minutes", time_since_epoch);
+    //    iss.update_gravity_and_atm_drag(time_since_epoch);
 
         // Wait for the update interval
-        thread::sleep(update_interval);
-    }
+    //    thread::sleep(update_interval);
+    //}
 }
 
 
