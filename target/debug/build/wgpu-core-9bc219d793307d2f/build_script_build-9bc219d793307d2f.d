@@ -1,0 +1,5 @@
+/home/jasha/Documents/adverum/target/debug/build/wgpu-core-9bc219d793307d2f/build_script_build-9bc219d793307d2f: /home/jasha/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wgpu-core-22.1.0/build.rs
+
+/home/jasha/Documents/adverum/target/debug/build/wgpu-core-9bc219d793307d2f/build_script_build-9bc219d793307d2f.d: /home/jasha/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wgpu-core-22.1.0/build.rs
+
+/home/jasha/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wgpu-core-22.1.0/build.rs:

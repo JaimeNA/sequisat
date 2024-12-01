@@ -1,18 +1,20 @@
 
 use chrono::prelude::*;
 use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike, Utc, Duration};
-mod sgp4;
-mod sgp4_propagator;
 
 use sgp4_propagator::TLE;
 use sgp4_propagator::Orbit;
+
+use window::run;
 
 use std::thread;
 use std::time::Duration as StdDuration;
 
 fn main() {
 
-    let tle = TLE::from_file("sample.tle");
+    run();
+
+    let tle = TLE::from_file("noaa.tle");
     tle.print_data();
     let epoch_year = tle.epoch_year;
     let epoch_day = tle.epoch_day;
