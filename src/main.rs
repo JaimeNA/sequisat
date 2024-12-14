@@ -1,18 +1,35 @@
+mod sgp4_propagator;
+mod sgp4;
 
 use chrono::prelude::*;
-use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike, Utc, Duration};
+use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike, Utc};
 
 use sgp4_propagator::TLE;
 use sgp4_propagator::Orbit;
 
-use window::run;
+use std::{io, thread, time::Duration};
+use tui::{
+    backend::CrosstermBackend,
+    widgets::{Widget, Block, Borders},
+    layout::{Layout, Constraint, Direction},
+    Terminal
+};
+use crossterm::{
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
 
-use std::thread;
-use std::time::Duration as StdDuration;
+use tui::widgets::GraphType;
+use tui::widgets::Dataset;
+use tui::symbols::Marker;
+use tui::widgets::Chart;
+use tui::style::Color;
+use tui::widgets::Axis;
+use tui::text::Span;
+use tui::style::Style;
 
-fn main() {
-
-    run();
+fn main() -> Result<(), io::Error> {
 
     let tle = TLE::from_file("noaa.tle");
     tle.print_data();
@@ -26,14 +43,17 @@ fn main() {
 
     iss.print_data();
 
-    for hours in 0..24 {
+    let mut test_coord: Vec<(f64, f64)> = Vec::new();
+
+    for hours in 0..240 {
         println!("t = {} min", hours * 60);
-        iss.update_gravity_and_atm_drag((hours * 60) as f64);
+        
+        test_coord.push(((hours*60) as f64, iss.update_gravity_and_atm_drag((hours * 60) as f64).sin()));
         //println!("    ṙ = {:?} km.s⁻¹", prediction.velocity);
     }
     
     // Set the update interval (e.g., 1 second)
-    let update_interval = StdDuration::from_secs(1);
+    let update_interval = Duration::from_secs(1);
 
     // Start the continuous update loop
     //loop {
@@ -50,6 +70,60 @@ fn main() {
         // Wait for the update interval
     //    thread::sleep(update_interval);
     //}
+    
+
+    // ---- EXPERIMENTAL -----
+
+        
+
+    let datasets = vec![
+        Dataset::default()
+            .name("data1")
+            .marker(Marker::Dot)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(Color::Cyan))
+            .data(&test_coord),
+    ];
+    let _chart: Chart = Chart::new(datasets)
+        .block(Block::default().title("Chart"))
+        .x_axis(Axis::default()
+            .title(Span::styled("X Axis", Style::default().fg(Color::Red)))
+            .style(Style::default().fg(Color::White))
+            .bounds([0.0, 2400.0])
+            .labels(["0.0", "500.0", "1000.0"].iter().cloned().map(Span::from).collect()))
+        .y_axis(Axis::default()
+            .title(Span::styled("Y Axis", Style::default().fg(Color::Red)))
+            .style(Style::default().fg(Color::White))
+            .bounds([0.0, 1.5])
+            .labels(["0.0", "5.0", "10.0"].iter().cloned().map(Span::from).collect()));
+
+    // setup terminal
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
+
+    terminal.draw(|f| {
+        let size = f.size();
+        let block = Block::default()
+            .title("Block")
+            .borders(Borders::ALL);
+        f.render_widget(_chart, size);
+    })?;
+
+    thread::sleep(Duration::from_millis(5000));
+
+    // restore terminal
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
+    terminal.show_cursor()?;
+
+    Ok(())
 }
 
 

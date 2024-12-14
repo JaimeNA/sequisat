@@ -126,7 +126,7 @@ impl SGP4
 
     }
 
-    pub fn update_gravity_and_atm_drag(&mut self, deltaTime: f64)
+    pub fn update_gravity_and_atm_drag(&mut self, deltaTime: f64) -> f64
     {
         let mdf = self.orbit_0.mean_anomaly + (1.0 + (3.0*K2 * (-1.0+3.0*self.phita*self.phita))/(2.0*self.semimayor_axis*self.semimayor_axis*self.beta0.powi(3))
             + (3.0*K2*K2 * (13.0 - 78.0*self.phita*self.phita + 137.0*self.phita.powi(4)))/(16.0*self.semimayor_axis.powi(4)*self.beta0.powi(7)))
@@ -280,5 +280,7 @@ impl SGP4
         println!("  altitude = {}: ", (radius - 1.0) * 6378.0);
         println!("  latitude = {}: ", latitude * (180.0 / core::f64::consts::PI));
         println!("  longitude = {}: ", longitude * (180.0 / core::f64::consts::PI));
+
+        return latitude;
     }
 }
