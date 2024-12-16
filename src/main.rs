@@ -8,12 +8,7 @@ use sgp4_propagator::TLE;
 use sgp4_propagator::Orbit;
 
 use std::{io, thread, time::Duration};
-use tui::{
-    backend::CrosstermBackend,
-    widgets::{Widget, Block, Borders},
-    layout::{Layout, Constraint, Direction},
-    Terminal
-};
+
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -28,6 +23,56 @@ use tui::style::Color;
 use tui::widgets::Axis;
 use tui::text::Span;
 use tui::style::Style;
+use tui::backend::CrosstermBackend;
+use tui::Terminal;
+use tui::widgets::Paragraph;
+use tui::layout::Rect;
+
+use tui::{
+    backend::Backend,
+    layout::{Constraint, Direction, Layout},
+    widgets::{Block, Borders},
+    Frame,
+};
+
+fn ui<B: Backend>(f: &mut Frame<B>) {
+   let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(10),
+                Constraint::Percentage(80),
+                Constraint::Percentage(10)
+            ].as_ref()
+        )
+        .split(f.size());
+
+    draw_coords(f, chunks[0]);
+
+    let block = Block::default()
+         .title("Block 2")
+         .borders(Borders::ALL);
+    f.render_widget(block, chunks[1]);
+}
+
+fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect)
+{
+    let coords = Block::default()
+        .title("Coordinates")
+        .borders(Borders::ALL);
+
+    let altitude = Paragraph::new(format!("Altitude: {}", getAltitude()))
+        .block(coords)
+        .style(Style::default().fg(Color::White));
+
+    f.render_widget(altitude, chunk);
+}
+
+fn getAltitude() -> f64
+{
+    return 65.0;
+}
 
 fn main() -> Result<(), io::Error> {
 
@@ -104,13 +149,7 @@ fn main() -> Result<(), io::Error> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    terminal.draw(|f| {
-        let size = f.size();
-        let block = Block::default()
-            .title("Block")
-            .borders(Borders::ALL);
-        f.render_widget(_chart, size);
-    })?;
+    terminal.draw(ui)?;
 
     thread::sleep(Duration::from_millis(5000));
 
