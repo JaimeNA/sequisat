@@ -15,17 +15,20 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
-use tui::style::Color;
-use tui::style::Style;
-use tui::backend::CrosstermBackend;
-use tui::Terminal;
-use tui::widgets::Paragraph;
+use tui::{
+    backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    widgets::{Block, Borders, Paragraph},
+    Terminal,
+};
+
 use tui::layout::Rect;
+use tui::widgets::canvas::Line;
 
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout},
-    widgets::{Block, Borders},
+    text::{Span, Spans, Text},
     Frame,
 };
 
@@ -35,9 +38,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, sat: &sgp4::SGP4) {
         .margin(1)
         .constraints(
             [
-                Constraint::Percentage(10),
-                Constraint::Percentage(80),
-                Constraint::Percentage(10)
+                Constraint::Percentage(20),
+                Constraint::Percentage(80)
             ].as_ref()
         )
         .split(f.size());
@@ -56,7 +58,21 @@ fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect, sat: &sgp4::SGP4)
         .title("Coordinates")
         .borders(Borders::ALL);
 
-    let altitude = Paragraph::new(format!("Altitude: {}", sat.getAltitude()))
+    let text = vec![
+        Spans::from("This is a paragraph with several lines. You can change style your text the way you want"),
+        Spans::from(""),
+        Spans::from(vec![
+            Span::from("For example: "),
+            Span::styled("under", Style::default().fg(Color::Red)),
+            Span::raw(" "),
+            Span::styled("the", Style::default().fg(Color::Green)),
+            Span::raw(" "),
+            Span::styled("rainbow", Style::default().fg(Color::Blue)),
+            Span::raw("."),
+        ])
+    ];
+
+    let altitude = Paragraph::new(text)
         .block(coords)
         .style(Style::default().fg(Color::White));
 
@@ -108,6 +124,15 @@ fn main() -> Result<(), io::Error> {
         iss.update_gravity_and_atm_drag(time_since_epoch);
 
         terminal.draw(|f| ui(f, &iss))?;
+
+        // Poll for events and check if 'q' key is pressed
+        if event::poll(std::time::Duration::from_millis(100))? {
+            if let event::Event::Key(key) = event::read()? {
+                if key.code == KeyCode::Char('q') {
+                    break; // Exit the loop when 'q' is pressed
+                }
+            }
+        }
 
         // Wait for the update interval
         thread::sleep(update_interval);
