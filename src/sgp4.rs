@@ -1,7 +1,5 @@
 
 
-use crate::sgp4_propagator::Constants;
-use crate::sgp4_propagator::TLE;
 use crate::sgp4_propagator::Orbit;
 
 const KE: f64 = 0.07436685316871385;
@@ -32,6 +30,9 @@ pub struct SGP4
     d2:     f64,
     d3:     f64,
     d4:     f64,
+    lat: f64,
+    lon: f64,
+    alt: f64
 }
 
 impl SGP4
@@ -53,6 +54,9 @@ impl SGP4
             d2:     0.0,
             d3:     0.0,
             d4:     0.0,
+            alt: 0.0,
+            lon: 0.0,
+            lat: 0.0
         }
     }
 
@@ -126,7 +130,7 @@ impl SGP4
 
     }
 
-    pub fn update_gravity_and_atm_drag(&mut self, deltaTime: f64) -> f64
+    pub fn update_gravity_and_atm_drag(&mut self, deltaTime: f64)
     {
         let mdf = self.orbit_0.mean_anomaly + (1.0 + (3.0*K2 * (-1.0+3.0*self.phita*self.phita))/(2.0*self.semimayor_axis*self.semimayor_axis*self.beta0.powi(3))
             + (3.0*K2*K2 * (13.0 - 78.0*self.phita*self.phita + 137.0*self.phita.powi(4)))/(16.0*self.semimayor_axis.powi(4)*self.beta0.powi(7)))
@@ -163,7 +167,7 @@ impl SGP4
             *deltaTime.powi(5));
 
         let b = (1.0-e*e).sqrt();
-        let n = KE / a.powf(1.5);
+        //let n = KE / a.powf(1.5);
 
         //Add the long-period periodic terms
 
@@ -173,7 +177,7 @@ impl SGP4
             * ((3.0+5.0*self.phita) / (1.0+self.phita));
         let aynl = (A30*self.orbit_0.inclination.sin()) / (4.0*K2*a*b*b);
         let ilt = il + ill;
-        let ayn = e*w.sin() + aynl;
+        let ayn = e*w.sin() + aynl; 
 
         // Solve Kepler's equation for (E + w) by defining:
         let up = (ilt - omega) % (2.0 * core::f64::consts::PI);    // Going to be reused later, not for U 
@@ -208,8 +212,8 @@ impl SGP4
 
         let r = a*(1.0 - ecose);
 
-        let rdot = KE*(a.sqrt()/r) * esine;
-        let rfdot = KE*(pl.sqrt()/r);
+        //let rdot = KE*(a.sqrt()/r) * esine;
+        // let rfdot = KE*(pl.sqrt()/r);
 
         let cosu = (a/r) * (eo1.cos() - axn + ayn*(esine / (1.0 + (1.0 - el2).sqrt())));
         let sinu = (a/r) * (eo1.sin() - ayn - axn*(esine / (1.0 + (1.0 - el2).sqrt())));
@@ -220,17 +224,17 @@ impl SGP4
         let deltau = -0.25 * (K2 / (pl*pl)) * (7.0*self.phita*self.phita - 1.0) * (2.0*u).sin();
         let deltaomega = ((3.0*K2*self.phita) / (2.0*pl*pl)) * (2.0*u).sin();
         let deltai = ((3.0*K2*self.phita) / (2.0*pl*pl)) * self.orbit_0.inclination.sin() * (2.0*u).cos();
-        let deltardot = -((K2*n) / pl) * (1.0-self.phita*self.phita) * (2.0*u).sin(); // Note that n is the actual n and n is the greek n-like letter
-        let deltarfdot = ((K2*n) / pl) * ((1.0-self.phita*self.phita) * (2.0*u).cos() 
-            - 1.5*(1.0 - 3.0*self.phita*self.phita));
+        //let deltardot = -((K2*n) / pl) * (1.0-self.phita*self.phita) * (2.0*u).sin(); // Note that n is the actual n and n is the greek n-like letter
+        //let deltarfdot = ((K2*n) / pl) * ((1.0-self.phita*self.phita) * (2.0*u).cos() 
+        //    - 1.5*(1.0 - 3.0*self.phita*self.phita));
 
         // The short period periodics are added to give the osculation quantities
         let rk = r*(1.0 - 1.5*K2*((1.0 - el2).sqrt() / (pl*pl)) * (3.0*self.phita*self.phita - 1.0)) + deltar;
         let uk = u + deltau;
         let omegak = omega + deltaomega;
         let ik = self.orbit_0.inclination + deltai;
-        let rdotk = rdot + deltardot;
-        let rfdotk = rfdot + deltarfdot;
+        //let rdotk = rdot + deltardot;
+        //let rfdotk = rfdot + deltarfdot;
 
         let ux = -omegak.sin() * ik.cos() * uk.sin()
             + omegak.cos() * uk.cos();
@@ -246,8 +250,9 @@ impl SGP4
         let radius = (rx*rx + ry*ry + rz*rz).sqrt();
         let longitude =
         {
-            if (ry > 0.0) {
-                if (rx < 0.0)
+            if ry > 0.0 
+            {
+                if rx < 0.0
                 {
                     (ry/rx).atan()
                 }
@@ -258,7 +263,7 @@ impl SGP4
             } 
             else
             {
-                if (rx < 0.0)
+                if rx < 0.0
                 {
                     -(ry/rx).atan()
                 }
@@ -273,14 +278,24 @@ impl SGP4
 
         let latitude = (rz.abs() / (rx*rx + ry*ry).sqrt()).atan();
 
-        print!("  rx = {}: ", rx * 6378.137);
-        print!("  ry = {}: ", ry * 6378.137);
-        println!("  rz = {}: ", rz * 6378.137);
-        println!("  ---  ");
-        println!("  altitude = {}: ", (radius - 1.0) * 6378.0);
-        println!("  latitude = {}: ", latitude * (180.0 / core::f64::consts::PI));
-        println!("  longitude = {}: ", longitude * (180.0 / core::f64::consts::PI));
-
-        return latitude;
+        self.alt = (radius - 1.0) * ER;
+        self.lat = latitude;
+        self.lon = longitude;
     }
+
+    pub fn getAltitude(&self) -> f64
+    {
+        return self.alt;
+    }
+
+    pub fn getLatitude(&self) -> f64
+    {
+        return self.lat;
+    }
+
+    pub fn getLongitude(&self) -> f64
+    {
+        return self.lon;
+    }
+
 }

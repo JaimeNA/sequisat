@@ -125,7 +125,7 @@ impl TLE
         let mut current_column = columns.next().unwrap();
         let catalog_number = (&current_column[..5]).parse::<i32>().unwrap();
 
-        // Classification
+        // Classification 
         let classification = match current_column.chars().nth(5).unwrap()
         {
             'U' =>  "Unclassified",
@@ -139,7 +139,7 @@ impl TLE
         let year_str = &current_column[..2];
 
         let mut launch_year = year_str.parse::<i32>().unwrap();
-        if (launch_year < 57)
+        if launch_year < 57
         {
             launch_year += 2000; 
         }
@@ -158,7 +158,7 @@ impl TLE
         let year_str = &current_column[..2];
 
         let mut epoch_year = year_str.parse::<i32>().unwrap();
-        if (epoch_year < 57)
+        if epoch_year < 57
         {
             epoch_year += 2000; 
         }
@@ -179,7 +179,8 @@ impl TLE
         columns.next(); // Second derivatice of mean motion
         current_column = columns.next().unwrap();
 
-        let temp = {if (current_column.chars().nth(0).unwrap() == '-')
+        let temp = {
+        if current_column.chars().nth(0).unwrap() == '-'
         {
             format!("-0.{}e{}", &current_column[1..6], &current_column[6..]) // Decimal point assumed
         }

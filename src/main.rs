@@ -15,13 +15,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
-use tui::widgets::GraphType;
-use tui::widgets::Dataset;
-use tui::symbols::Marker;
-use tui::widgets::Chart;
 use tui::style::Color;
-use tui::widgets::Axis;
-use tui::text::Span;
 use tui::style::Style;
 use tui::backend::CrosstermBackend;
 use tui::Terminal;
@@ -62,17 +56,13 @@ fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect)
         .title("Coordinates")
         .borders(Borders::ALL);
 
-    let altitude = Paragraph::new(format!("Altitude: {}", getAltitude()))
+    let altitude = Paragraph::new(format!("Altitude: {}", 64.0))
         .block(coords)
         .style(Style::default().fg(Color::White));
 
     f.render_widget(altitude, chunk);
 }
 
-fn getAltitude() -> f64
-{
-    return 65.0;
-}
 
 fn main() -> Result<(), io::Error> {
 
@@ -88,59 +78,8 @@ fn main() -> Result<(), io::Error> {
 
     iss.print_data();
 
-    let mut test_coord: Vec<(f64, f64)> = Vec::new();
-
-    for hours in 0..240 {
-        println!("t = {} min", hours * 60);
-        
-        test_coord.push(((hours*60) as f64, iss.update_gravity_and_atm_drag((hours * 60) as f64).sin()));
-        //println!("    ṙ = {:?} km.s⁻¹", prediction.velocity);
-    }
-    
     // Set the update interval (e.g., 1 second)
     let update_interval = Duration::from_secs(1);
-
-    // Start the continuous update loop
-    //loop {
-        // Get the current time (UTC)
-    //    let current_time = Utc::now().naive_utc();
-
-        // Calculate the time since the epoch in minutes
-    //    let time_since_epoch = time_since_epoch_in_minutes(epoch_year, epoch_day);
-
-        // Display the result
-    //    println!("Time since epoch: {} minutes", time_since_epoch);
-    //    iss.update_gravity_and_atm_drag(time_since_epoch);
-
-        // Wait for the update interval
-    //    thread::sleep(update_interval);
-    //}
-    
-
-    // ---- EXPERIMENTAL -----
-
-        
-
-    let datasets = vec![
-        Dataset::default()
-            .name("data1")
-            .marker(Marker::Dot)
-            .graph_type(GraphType::Line)
-            .style(Style::default().fg(Color::Cyan))
-            .data(&test_coord),
-    ];
-    let _chart: Chart = Chart::new(datasets)
-        .block(Block::default().title("Chart"))
-        .x_axis(Axis::default()
-            .title(Span::styled("X Axis", Style::default().fg(Color::Red)))
-            .style(Style::default().fg(Color::White))
-            .bounds([0.0, 2400.0])
-            .labels(["0.0", "500.0", "1000.0"].iter().cloned().map(Span::from).collect()))
-        .y_axis(Axis::default()
-            .title(Span::styled("Y Axis", Style::default().fg(Color::Red)))
-            .style(Style::default().fg(Color::White))
-            .bounds([0.0, 1.5])
-            .labels(["0.0", "5.0", "10.0"].iter().cloned().map(Span::from).collect()));
 
     // setup terminal
     enable_raw_mode()?;
@@ -149,9 +88,22 @@ fn main() -> Result<(), io::Error> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    terminal.draw(ui)?;
+    // Start the continuous update loop
+    loop {
+        // Calculate the time since the epoch in minutes
+        let time_since_epoch = time_since_epoch_in_minutes(epoch_year, epoch_day);
 
-    thread::sleep(Duration::from_millis(5000));
+        // Display the result
+        iss.update_gravity_and_atm_drag(time_since_epoch);
+
+        terminal.draw(ui)?;
+
+        // Wait for the update interval
+        thread::sleep(update_interval);
+    }
+    
+
+    // ---- EXPERIMENTAL -----
 
     // restore terminal
     disable_raw_mode()?;
@@ -172,15 +124,15 @@ fn main() -> Result<(), io::Error> {
         let day_of_year = epoch_day as u32;
 
         // Convert the day of the year to a NaiveDate
-        let tle_date = NaiveDate::from_yo(epoch_year, day_of_year);
+        let tle_date = NaiveDate::from_yo_opt(epoch_year, day_of_year);
 
         // Calculate the time from the fractional day part (fraction of 24 hours)
         let seconds_in_day = 86400.0 * (epoch_day - day_of_year as f64);
-        let tle_time = NaiveTime::from_num_seconds_from_midnight(seconds_in_day as u32, 0);
+        let tle_time = NaiveTime::from_num_seconds_from_midnight_opt(seconds_in_day as u32, 0);
 
         // Create a full TLE epoch DateTime in UTC
         let tle_datetime = Utc
-            .from_utc_datetime(&NaiveDate::and_time(&tle_date, tle_time))
+            .from_utc_datetime(&NaiveDate::and_time(&tle_date.unwrap(), tle_time.unwrap()))
             .with_timezone(&Utc);
 
         // Get the current time in UTC
