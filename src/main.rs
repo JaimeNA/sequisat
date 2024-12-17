@@ -29,7 +29,7 @@ use tui::{
     Frame,
 };
 
-fn ui<B: Backend>(f: &mut Frame<B>) {
+fn ui<B: Backend>(f: &mut Frame<B>, sat: &sgp4::SGP4) {
    let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .margin(1)
@@ -42,7 +42,7 @@ fn ui<B: Backend>(f: &mut Frame<B>) {
         )
         .split(f.size());
 
-    draw_coords(f, chunks[0]);
+    draw_coords(f, chunks[0], sat);
 
     let block = Block::default()
          .title("Block 2")
@@ -50,17 +50,28 @@ fn ui<B: Backend>(f: &mut Frame<B>) {
     f.render_widget(block, chunks[1]);
 }
 
-fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect)
+fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect, sat: &sgp4::SGP4)
 {
     let coords = Block::default()
         .title("Coordinates")
         .borders(Borders::ALL);
 
-    let altitude = Paragraph::new(format!("Altitude: {}", 64.0))
+    let altitude = Paragraph::new(format!("Altitude: {}", sat.getAltitude()))
         .block(coords)
         .style(Style::default().fg(Color::White));
 
+
+   // let latitude = Paragraph::new(format!("Latitude: {}", sat.getLatitude()))
+   //     .block(coords)
+   //     .style(Style::default().fg(Color::White));
+
+    //let longitude = Paragraph::new(format!("Longitude: {}", sat.getLongitude()))
+    //    .block(coords)
+    //    .style(Style::default().fg(Color::White));
+
     f.render_widget(altitude, chunk);
+    //f.render_widget(latitude, chunk);
+    //f.render_widget(longitude, chunk);
 }
 
 
@@ -96,7 +107,7 @@ fn main() -> Result<(), io::Error> {
         // Display the result
         iss.update_gravity_and_atm_drag(time_since_epoch);
 
-        terminal.draw(ui)?;
+        terminal.draw(|f| ui(f, &iss))?;
 
         // Wait for the update interval
         thread::sleep(update_interval);
