@@ -1,39 +1,34 @@
-mod sgp4_propagator;
-mod sgp4;
+mod propagator;
+mod tle;
+mod orbit;
+mod satellite;
 
-use chrono::prelude::*;
-use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike, Utc};
+use satellite::Satellite;
+use std::{io, thread};
+use std::time::Duration;
 
-use sgp4_propagator::TLE;
-use sgp4_propagator::Orbit;
+use tui::symbols::Marker;
 
-use std::{io, thread, time::Duration};
+use tui::{
+    backend::{Backend, CrosstermBackend},
+    style::{Style, Color},
+    widgets::{Block, Borders, Paragraph},
+    widgets::canvas::{Canvas, Context, Map, MapResolution, Rectangle},
+    text::{Spans, Span},
+    layout::{Constraint, Rect, Direction, Layout},
+    Frame,
+    Terminal
+};
+
+use crossterm::event;
 
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{enable_raw_mode, disable_raw_mode, LeaveAlternateScreen, EnterAlternateScreen},
+    event::{Event, KeyCode, DisableMouseCapture, EnableMouseCapture},
 };
 
-use tui::{
-    backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Paragraph, canvas::*},
-    Terminal,
-};
-
-use tui::layout::Rect;
-use tui::widgets::canvas::Line;  
-use tui::symbols;
-
-use tui::{
-    backend::Backend,
-    text::{Span, Spans, Text},
-    Frame,
-};
-
-fn ui<B: Backend>(f: &mut Frame<B>, sat: &sgp4::SGP4) {
+fn ui<B: Backend>(f: &mut Frame<B>, sat: &Satellite) {
    let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .margin(1)
@@ -60,7 +55,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, sat: &sgp4::SGP4) {
     f.render_widget(map, chunks[1]);
 }
 
-fn paint_map(ctx: &mut Context, sat: &sgp4::SGP4)
+fn paint_map(ctx: &mut Context, sat: &Satellite)
 {
     
     ctx.draw(&Map {
@@ -80,7 +75,7 @@ fn paint_map(ctx: &mut Context, sat: &sgp4::SGP4)
 }
 
 
-fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect, sat: &sgp4::SGP4)
+fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect, sat: &Satellite)
 {
     let coords = Block::default()
         .title("Coordinates")
@@ -119,20 +114,10 @@ fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect, sat: &sgp4::SGP4)
     //f.render_widget(longitude, chunk);
 }
 
-
 fn main() -> Result<(), io::Error> {
 
-    let tle = TLE::from_file("noaa.tle");
-    tle.print_data();
-    let epoch_year = tle.epoch_year;
-    let epoch_day = tle.epoch_day;
-
-    let orbit_0 = Orbit::from_tle(tle);
-    let mut iss = sgp4::SGP4::new(orbit_0);
-
-    iss.calculate_constants();
-
-    iss.print_data();
+    let mut noaa_18 = Satellite::new("noaa.tle");
+    noaa_18.print();    // TODO: Implement to_string
 
     // Set the update interval (e.g., 1 second)
     let update_interval = Duration::from_secs(1);
@@ -146,13 +131,9 @@ fn main() -> Result<(), io::Error> {
 
     // Start the continuous update loop
     loop {
-        // Calculate the time since the epoch in minutes
-        let time_since_epoch = time_since_epoch_in_minutes(epoch_year, epoch_day);
+        noaa_18.update_position();
 
-        // Display the result
-        iss.update_gravity_and_atm_drag(time_since_epoch);
-
-        terminal.draw(|f| ui(f, &iss))?;
+        terminal.draw(|f| ui(f, &noaa_18))?;
 
         // Poll for events and check if 'q' key is pressed
         if event::poll(std::time::Duration::from_millis(100))? {
@@ -183,29 +164,5 @@ fn main() -> Result<(), io::Error> {
 }
 
 
-    // Function to calculate the time difference between two NaiveDateTime in minutes
-    pub fn time_since_epoch_in_minutes(epoch_year :i32, epoch_day :f64) -> f64 {
-
-        let day_of_year = epoch_day as u32;
-
-        // Convert the day of the year to a NaiveDate
-        let tle_date = NaiveDate::from_yo_opt(epoch_year, day_of_year);
-
-        // Calculate the time from the fractional day part (fraction of 24 hours)
-        let seconds_in_day = 86400.0 * (epoch_day - day_of_year as f64);
-        let tle_time = NaiveTime::from_num_seconds_from_midnight_opt(seconds_in_day as u32, 0);
-
-        // Create a full TLE epoch DateTime in UTC
-        let tle_datetime = Utc
-            .from_utc_datetime(&NaiveDate::and_time(&tle_date.unwrap(), tle_time.unwrap()))
-            .with_timezone(&Utc);
-
-        // Get the current time in UTC
-        let now = Utc::now();
-
-        // Calculate the delta in minutes
-        let delta = now.signed_duration_since(tle_datetime).num_seconds() as f64 / 60.0;
-
-        delta
-    }
+    
 

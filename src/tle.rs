@@ -69,7 +69,7 @@ impl TLE
         println!("Mean Motion(radians/min):   {}", self.mean_motion);
     }
 
-    pub fn from_file(file_path: &str) -> Self
+    pub fn new(file_path: &str) -> Self
     {
         let contents = fs::read_to_string(file_path)
         .expect("Should have been able to read the file");

@@ -1,6 +1,5 @@
-mod orbit;
 
-use orbit::Orbit;
+use crate::orbit::Orbit;
 
 pub enum HighAltitude {
     No {},
@@ -35,6 +34,27 @@ pub enum Method {
     //     lunar_perturbations: third_body::Perturbations,
     //     resonant: Resonant,
     // },
+}
+pub struct Geopotential {
+    /// Equatorial radius of the earth in km
+    // aₑ
+    pub ae: f64,
+
+    /// square root of earth's gravitational parameter in earth radii³ min⁻²
+    // kₑ
+    pub ke: f64,
+
+    /// un-normalised second zonal harmonic
+    // J₂
+    pub j2: f64,
+
+    /// un-normalised third zonal harmonic
+    // J₃
+    pub j3: f64,
+
+    /// un-normalised fourth zonal harmonic
+    // J₄
+    pub j4: f64,
 }
 
 pub struct Constants {
@@ -176,7 +196,7 @@ impl SGP4
 
     }
 
-    pub fn update_gravity_and_atm_drag(&mut self, deltaTime: f64)
+    pub fn propagate(&mut self, deltaTime: f64)
     {
         let mdf = self.orbit_0.mean_anomaly + (1.0 + (3.0*K2 * (-1.0+3.0*self.phita*self.phita))/(2.0*self.semimayor_axis*self.semimayor_axis*self.beta0.powi(3))
             + (3.0*K2*K2 * (13.0 - 78.0*self.phita*self.phita + 137.0*self.phita.powi(4)))/(16.0*self.semimayor_axis.powi(4)*self.beta0.powi(7)))

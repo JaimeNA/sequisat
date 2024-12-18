@@ -1,3 +1,5 @@
+use crate::tle::TLE;
+
 pub struct Orbit {
     /// B star
     pub drag_term: f64,
@@ -22,7 +24,7 @@ pub struct Orbit {
 }
 
 impl Orbit{
-    pub fn from_tle(tle :TLE) -> Self
+    pub fn new(tle :&TLE) -> Self
     {
         Orbit{
             drag_term:  tle.drag_term,
@@ -35,25 +37,6 @@ impl Orbit{
         }
     }
 }
-pub struct Geopotential {
-    /// Equatorial radius of the earth in km
-    // aₑ
-    pub ae: f64,
 
-    /// square root of earth's gravitational parameter in earth radii³ min⁻²
-    // kₑ
-    pub ke: f64,
 
-    /// un-normalised second zonal harmonic
-    // J₂
-    pub j2: f64,
-
-    /// un-normalised third zonal harmonic
-    // J₃
-    pub j3: f64,
-
-    /// un-normalised fourth zonal harmonic
-    // J₄
-    pub j4: f64,
-}
 
