@@ -19,12 +19,13 @@ use tui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, Paragraph, canvas::*},
     Terminal,
 };
 
 use tui::layout::Rect;
-use tui::widgets::canvas::Line;
+use tui::widgets::canvas::Line;  
+use tui::symbols;
 
 use tui::{
     backend::Backend,
@@ -46,11 +47,38 @@ fn ui<B: Backend>(f: &mut Frame<B>, sat: &sgp4::SGP4) {
 
     draw_coords(f, chunks[0], sat);
 
+    let map = Canvas::default()
+        .block(Block::default().title("World").borders(Borders::ALL))
+        .paint(|ctx| paint_map(ctx, sat))
+        .marker(symbols::Marker::Braille)
+        .x_bounds([-180.0, 180.0])
+        .y_bounds([-90.0, 90.0]);
+
     let block = Block::default()
          .title("Block 2")
          .borders(Borders::ALL);
-    f.render_widget(block, chunks[1]);
+    f.render_widget(map, chunks[1]);
 }
+
+fn paint_map(ctx: &mut Context, sat: &sgp4::SGP4)
+{
+    
+    ctx.draw(&Map {
+        color: Color::White,
+        resolution: MapResolution::High,
+    });
+    ctx.layer();    // Go one layer above
+                    //
+    ctx.draw(&Rectangle {
+        x: (sat.getLongitude()* 180.0/3.14159),
+        y: (sat.getLatitude()* 180.0/3.14159),
+        width: 10.0,
+        height: 10.0,
+        color: Color::Yellow,
+    });
+
+}
+
 
 fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect, sat: &sgp4::SGP4)
 {
@@ -59,16 +87,17 @@ fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect, sat: &sgp4::SGP4)
         .borders(Borders::ALL);
 
     let text = vec![
-        Spans::from("This is a paragraph with several lines. You can change style your text the way you want"),
-        Spans::from(""),
         Spans::from(vec![
-            Span::from("For example: "),
-            Span::styled("under", Style::default().fg(Color::Red)),
-            Span::raw(" "),
-            Span::styled("the", Style::default().fg(Color::Green)),
-            Span::raw(" "),
-            Span::styled("rainbow", Style::default().fg(Color::Blue)),
-            Span::raw("."),
+            Span::from("Altitude: "),
+            Span::styled(sat.getAltitude().to_string(), Style::default().fg(Color::Red)),
+        ]),
+        Spans::from(vec![
+            Span::from("Latitude: "),
+            Span::styled((sat.getLatitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Blue)),
+        ]),
+        Spans::from(vec![
+            Span::from("Longitud: "),
+            Span::styled((sat.getLongitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Green)),
         ])
     ];
 
@@ -85,7 +114,7 @@ fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect, sat: &sgp4::SGP4)
     //    .block(coords)
     //    .style(Style::default().fg(Color::White));
 
-    f.render_widget(altitude, chunk);
+    f.render_widget(altitude, chunk); 
     //f.render_widget(latitude, chunk);
     //f.render_widget(longitude, chunk);
 }

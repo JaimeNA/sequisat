@@ -1,6 +1,52 @@
+mod orbit;
 
+use orbit::Orbit;
 
-use crate::sgp4_propagator::Orbit;
+pub enum HighAltitude {
+    No {},
+    // Yes {
+    //     c5: f64,
+    //     d2: f64,
+    //     d3: f64,
+    //     d4: f64,
+    //     eta: f64,
+    //     k7: f64,
+    //     k8: f64,
+    //     k9: f64,
+    //     k10: f64,
+    //     elliptic: Elliptic,
+    // },
+}
+
+pub enum Method {
+    NearEarth {
+        a0: f64,
+        k2: f64,
+        k3: f64,
+        k4: f64,
+        k5: f64,
+        k6: f64,
+        high_altitude: HighAltitude,
+    },
+    // DeepSpace {
+    //     eccentricity_dot: f64,
+    //     inclination_dot: f64,
+    //     solar_perturbations: third_body::Perturbations,
+    //     lunar_perturbations: third_body::Perturbations,
+    //     resonant: Resonant,
+    // },
+}
+
+pub struct Constants {
+    pub geopotential: Geopotential,
+    pub right_ascension_dot: f64,
+    pub argument_of_perigee_dot: f64,
+    pub mean_anomaly_dot: f64,
+    pub k2:         f64,
+    pub k4:         f64,
+    pub method:     Method,
+    pub orbit_0:    Orbit,
+}
 
 const KE: f64 = 0.07436685316871385;
 const S: f64 = 1.0122292763545218;
@@ -9,14 +55,14 @@ const Q0MS2T: f64 = 0.00000000188027916;
 const J2: f64 = 0.00108262998905;     // Second Gravitational Zonal Harmonic of the Earth
 const J3: f64 = -0.00000253215306;   // Third Gravitational Zonal Harmonic of the Earth
 const J4: f64 = -0.00000161098761;   // Forth Gravitational Zonal Harmonic of the Earth
-const AE: f64 = 1.0;            // Equatorial radius of the earth
+const AE: f64 = 1.0;            // Equatorial radius of t ehe earth
 const K2: f64 = 0.5*J2*AE*AE;
 const K4: f64 = (-3.0/8.0)*J4*AE*AE*AE*AE;
 const A30: f64 = -J3*AE*AE*AE;
 
 pub struct SGP4
 {
-    orbit_0: Orbit,
+    pub orbit_0: Orbit,
     semimayor_axis:    f64,
     phita:  f64,
     exilon: f64,
@@ -248,35 +294,10 @@ impl SGP4
         let rz = rk * uz;
 
         let radius = (rx*rx + ry*ry + rz*rz).sqrt();
-        let longitude =
-        {
-            if ry > 0.0 
-            {
-                if rx < 0.0
-                {
-                    (ry/rx).atan()
-                }
-                else
-                {
-                    (ry/rx).atan() + core::f64::consts::PI/2.0
-                }
-            } 
-            else
-            {
-                if rx < 0.0
-                {
-                    -(ry/rx).atan()
-                }
-                else
-                {
-                    -((ry/rx).atan() + core::f64::consts::PI/2.0)
-                }
-
-            }
-        };
+        let longitude = ry.atan2(rx);
 
 
-        let latitude = (rz.abs() / (rx*rx + ry*ry).sqrt()).atan();
+        let latitude = (rz/1.0).asin();
 
         self.alt = (radius - 1.0) * ER;
         self.lat = latitude;
