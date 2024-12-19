@@ -5,7 +5,7 @@ mod satellite;
 
 use satellite::Satellite;
 use std::{io, thread};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use tui::symbols;
 
@@ -122,9 +122,9 @@ fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect, sat: &Satellite)
 
 fn main() -> Result<(), io::Error> {
 
-    let mut noaa_18 = Satellite::new("noaa.tle");
+    let mut noaa_18 = Satellite::new("iss.tle");
     noaa_18.print();    // TODO: Implement to_string
-
+    
     // Set the update interval (e.g., 1 second)
     let update_interval = Duration::from_secs(1);
 
@@ -135,25 +135,32 @@ fn main() -> Result<(), io::Error> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
+    let tick_rate: Duration = Duration::from_millis(100);
+    let mut last_tick = Instant::now();
     // Start the continuous update loop
     loop {
-        noaa_18.update_position();
 
-        noaa_18.get_trajectory();
+        let timeout = tick_rate
+        .checked_sub(last_tick.elapsed())
+        .unwrap_or_else(|| Duration::from_secs(0));
 
-        terminal.draw(|f| ui(f, &noaa_18))?;
-
-        // Poll for events and check if 'q' key is pressed
-        if event::poll(std::time::Duration::from_millis(100))? {
-            if let event::Event::Key(key) = event::read()? {
-                if key.code == KeyCode::Char('q') {
-                    break; // Exit the loop when 'q' is pressed
+        if crossterm::event::poll(timeout)? {
+            if let Event::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Char(q) => break,
+                    _ => {}
                 }
             }
         }
+        
+        if last_tick.elapsed() >= tick_rate {
+            noaa_18.update_position();
 
-        // Wait for the update interval
-        thread::sleep(update_interval);
+            noaa_18.get_trajectory();
+
+            terminal.draw(|f| ui(f, &noaa_18))?;
+            last_tick = Instant::now();
+        }
     }
     
 

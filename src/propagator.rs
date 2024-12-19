@@ -70,7 +70,7 @@ pub struct Constants {
 
 const KE: f64 = 0.07436685316871385;
 const S: f64 = 1.0122292763545218;
-const ER: f64 = 6371.0;
+const ER: f64 = 6378.0;
 const Q0MS2T: f64 = 0.00000000188027916;
 const J2: f64 = 0.00108262998905;     // Second Gravitational Zonal Harmonic of the Earth
 const J3: f64 = -0.00000253215306;   // Third Gravitational Zonal Harmonic of the Earth
@@ -318,7 +318,7 @@ impl SGP4
         let longitude = ry.atan2(rx);
 
 
-        let latitude = (rz/((rx*rx + ry*ry + rz*rz).sqrt())).asin();
+        let latitude = -(rz / (rx*rx + ry*ry).sqrt()).atan();
 
         self.alt = (radius - 1.0) * ER;
         self.lat = latitude;
