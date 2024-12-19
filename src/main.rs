@@ -7,13 +7,13 @@ use satellite::Satellite;
 use std::{io, thread};
 use std::time::Duration;
 
-use tui::symbols::Marker;
+use tui::symbols;
 
 use tui::{
     backend::{Backend, CrosstermBackend},
     style::{Style, Color},
     widgets::{Block, Borders, Paragraph},
-    widgets::canvas::{Canvas, Context, Map, MapResolution, Rectangle},
+    widgets::canvas::{Canvas, Context, Map, MapResolution, Rectangle, Points},
     text::{Spans, Span},
     layout::{Constraint, Rect, Direction, Layout},
     Frame,
@@ -72,6 +72,12 @@ fn paint_map(ctx: &mut Context, sat: &Satellite)
         color: Color::Yellow,
     });
 
+    ctx.layer();
+
+    ctx.draw(&Points {
+        coords: sat.get_points(),
+        color: Color::Green
+    });
 }
 
 
@@ -132,6 +138,8 @@ fn main() -> Result<(), io::Error> {
     // Start the continuous update loop
     loop {
         noaa_18.update_position();
+
+        noaa_18.get_trajectory();
 
         terminal.draw(|f| ui(f, &noaa_18))?;
 

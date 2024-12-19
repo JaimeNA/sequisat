@@ -196,6 +196,7 @@ impl SGP4
 
     }
 
+    // Note: this provides the coordinates in TEME, meaning that it doesnt have an earth-fixed frame, that would be the ECEF
     pub fn propagate(&mut self, deltaTime: f64)
     {
         let mdf = self.orbit_0.mean_anomaly + (1.0 + (3.0*K2 * (-1.0+3.0*self.phita*self.phita))/(2.0*self.semimayor_axis*self.semimayor_axis*self.beta0.powi(3))
@@ -317,7 +318,7 @@ impl SGP4
         let longitude = ry.atan2(rx);
 
 
-        let latitude = (rz/1.0).asin();
+        let latitude = (rz/((rx*rx + ry*ry + rz*rz).sqrt())).asin();
 
         self.alt = (radius - 1.0) * ER;
         self.lat = latitude;

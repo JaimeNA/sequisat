@@ -9,7 +9,8 @@ use chrono::{Utc, TimeZone, NaiveDate, NaiveTime};
 pub struct Satellite 
 {
     propagator: SGP4,
-    tle: TLE
+    tle: TLE,
+    points: Vec<(f64, f64)>
 }  
 
 impl Satellite
@@ -25,13 +26,30 @@ impl Satellite
         Satellite
         {
             propagator: propagator,
-            tle: tle
+            tle: tle,
+            points: Vec::new()
         }
     }
 
     pub fn print(&self)
     {
         self.tle.print_data();
+    }
+
+    pub fn get_points(&self) -> &Vec<(f64, f64)>
+    {
+        return &self.points;
+    }
+
+    pub fn get_trajectory(&mut self)
+    {
+        self.points.clear();
+
+        for i in 0..2400
+        {
+            self.propagator.propagate(self.time_since_epoch_in_minutes() + i as f64);
+            self.points.push((self.getLongitude() * (180.0/3.14159), self.getLatitude() * (180.0/3.14159)));
+        }
     }
 
     pub fn getAltitude(&self) -> f64
