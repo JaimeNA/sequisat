@@ -318,7 +318,7 @@ impl SGP4
         let longitude = ry.atan2(rx);
 
 
-        let latitude = -(rz / (rx*rx + ry*ry).sqrt()).atan();
+        let latitude = (rz / (rx*rx + ry*ry).sqrt()).atan();
 
         self.alt = (radius - 1.0) * ER;
         self.lat = latitude;
