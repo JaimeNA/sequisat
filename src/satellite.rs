@@ -64,34 +64,30 @@ impl Satellite
         {
             self.gst = self.getGST(Self::get_julian_day() + (i as f64 / (60.0*24.0)));
             self.propagator.propagate(self.time_since_epoch_in_minutes() + i as f64);
-            self.points.push((self.getLongitude() * (180.0/3.14159), self.getLatitude() * (180.0/3.14159)));
+            self.points.push((self.getLongitude() * (180.0/core::f64::consts::PI), self.getLatitude() * (180.0/core::f64::consts::PI)));
         }
     }
 
-    const G: f64 = 6.697374558;
     pub fn getGST(&self, julian_time: f64) -> f64
     {
-        let J2000 = 2451545.0;
+        let J2000 = 2451545.0;  // Epoch of reference
 
-        let JD0 = julian_time.floor() + 0.5;
+        let Jd0 = julian_time.floor() + 0.5;
 
-        let days_since_JD0 = julian_time - JD0;
+        let days_since_JD0 = julian_time - Jd0;
         let hours_since_JD0 = days_since_JD0 * 24.0;  // H
 
         let days_since_J2000  = julian_time - J2000;    // D
         let centuries_since_J2000  = days_since_J2000  / 36525.0;   // T
-        let whole_days_since_J2000  = JD0 - J2000;
+        let whole_days_since_J2000  = Jd0 - J2000;
 
         let GMST = 6.697374558 + 0.06570982441908*whole_days_since_J2000  + 1.00273790935*hours_since_JD0 + 0.000026*centuries_since_J2000.powi(2);
-        //let GMST0 = 100.46061837 + 36000.770053608*centuries_since_J2000 + 0.000387933*centuries_since_J2000.powi(2) - (1.0/38710000.0)*centuries_since_J2000.powi(3);
 
-        let GMST_rads = GMST * (3.14159/180.0);
+        let GMST_normalized = GMST.rem_euclid(24.0);
 
-        let normalized = GMST.rem_euclid(24.0);
+        let GMST_rads = GMST_normalized * (core::f64::consts::PI/12.0);
 
-        let hour = normalized * (3.14159/12.0);
-
-        return hour;
+        return GMST_rads;
     }
 
     pub fn getAltitude(&self) -> f64
@@ -106,7 +102,7 @@ impl Satellite
 
     pub fn getLongitude(&self) -> f64
     {
-        return (self.propagator.getLongitude() - self.gst + 3.14159).rem_euclid(2.0*3.14159) - 3.14159; // Normalize to range
+        return (self.propagator.getLongitude() - self.gst + core::f64::consts::PI).rem_euclid(2.0*core::f64::consts::PI) - core::f64::consts::PI; // Normalize to range
     }
 
     pub fn update_position(&mut self)

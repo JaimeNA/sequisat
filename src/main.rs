@@ -7,14 +7,15 @@ use satellite::Satellite;
 use std::{io, thread};
 use std::time::{Duration, Instant};
 
-use tui::symbols;
+use ratatui::symbols;
 
-use tui::{
+use ratatui::{
     backend::{Backend, CrosstermBackend},
     style::{Style, Color},
     widgets::{Block, Borders, Paragraph},
     widgets::canvas::{Canvas, Context, Map, MapResolution, Rectangle, Points},
-    text::{Spans, Span},
+    text::{Span},
+    text,
     layout::{Constraint, Rect, Direction, Layout},
     Frame,
     Terminal
@@ -28,7 +29,7 @@ use crossterm::{
     event::{Event, KeyCode, DisableMouseCapture, EnableMouseCapture},
 };
 
-fn ui<B: Backend>(f: &mut Frame<B>, sat: &Satellite) {
+fn ui(f: &mut Frame, sat: &Satellite) {
    let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .margin(1)
@@ -81,22 +82,22 @@ fn paint_map(ctx: &mut Context, sat: &Satellite)
 }
 
 
-fn draw_coords<B: Backend>(f: &mut Frame<B>, chunk: Rect, sat: &Satellite)
+fn draw_coords(f: &mut Frame, chunk: Rect, sat: &Satellite)
 {
     let coords = Block::default()
         .title("Coordinates")
         .borders(Borders::ALL);
 
     let text = vec![
-        Spans::from(vec![
+        text::Line::from(vec![
             Span::from("Altitude: "),
             Span::styled(sat.getAltitude().to_string(), Style::default().fg(Color::Red)),
         ]),
-        Spans::from(vec![
+        text::Line::from(vec![
             Span::from("Latitude: "),
             Span::styled((sat.getLatitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Blue)),
         ]),
-        Spans::from(vec![
+        text::Line::from(vec![
             Span::from("Longitud: "),
             Span::styled((sat.getLongitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Green)),
         ])
