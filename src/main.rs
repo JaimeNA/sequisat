@@ -154,9 +154,9 @@ fn main() -> Result<(), io::Error> {
         }
         
         if last_tick.elapsed() >= tick_rate {
-            noaa_18.update_position();
-
             noaa_18.get_trajectory();
+
+            noaa_18.update_position();
 
             terminal.draw(|f| ui(f, &noaa_18))?;
             last_tick = Instant::now();
