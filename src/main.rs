@@ -1,4 +1,7 @@
 mod backend;
+mod app;
+mod ui;
+mod crossterm;
 
 use backend::satellite::Satellite;
 use std::{io, thread};
@@ -117,7 +120,7 @@ fn draw_coords(f: &mut Frame, chunk: Rect, sat: &Satellite)
     //f.render_widget(longitude, chunk);
 }
 
-fn main() -> Result<(), io::Error> {
+fn main() -> Result<(), Box<dyn Error>> {
 
     let mut noaa_18 = Satellite::new("noaa.tle");
     noaa_18.print();    // TODO: Implement to_string
@@ -125,52 +128,36 @@ fn main() -> Result<(), io::Error> {
     // Set the update interval (e.g., 1 second)
     let update_interval = Duration::from_secs(1);
 
-    // setup terminal
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
     let tick_rate: Duration = Duration::from_millis(100);
     let mut last_tick = Instant::now();
     // Start the continuous update loop
-    loop {
+    // loop {
 
-        let timeout = tick_rate
-        .checked_sub(last_tick.elapsed())
-        .unwrap_or_else(|| Duration::from_secs(0));
+    //     let timeout = tick_rate
+    //     .checked_sub(last_tick.elapsed())
+    //     .unwrap_or_else(|| Duration::from_secs(0));
 
-        if crossterm::event::poll(timeout)? {
-            if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Char(q) => break,
-                    _ => {}
-                }
-            }
-        }
+    //     if crossterm::event::poll(timeout)? {
+    //         if let Event::Key(key) = event::read()? {
+    //             match key.code {
+    //                 KeyCode::Char(q) => break,
+    //                 _ => {}
+    //             }
+    //         }
+    //     }
         
-        if last_tick.elapsed() >= tick_rate {
-            noaa_18.get_trajectory();
+    //     if last_tick.elapsed() >= tick_rate {
+    //         noaa_18.get_trajectory();
 
-            noaa_18.update_position();
+    //         noaa_18.update_position();
 
-            terminal.draw(|f| ui(f, &noaa_18))?;
-            last_tick = Instant::now();
-        }
-    }
+    //         terminal.draw(|f| ui(f, &noaa_18))?;
+    //         last_tick = Instant::now();
+    //     }
+    // }
     
-
-    // ---- EXPERIMENTAL -----
-
-    // restore terminal
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
+    #[cfg(feature = "crossterm")]
+    crate::crossterm::run(tick_rate, true)?;
 
     Ok(())
 }
