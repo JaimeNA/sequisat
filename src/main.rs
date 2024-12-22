@@ -1,9 +1,6 @@
-mod propagator;
-mod tle;
-mod orbit;
-mod satellite;
+mod backend;
 
-use satellite::Satellite;
+use backend::satellite::Satellite;
 use std::{io, thread};
 use std::time::{Duration, Instant};
 
@@ -13,7 +10,7 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     style::{Style, Color},
     widgets::{Block, Borders, Paragraph},
-    widgets::canvas::{Canvas, Context, Map, MapResolution, Rectangle, Points},
+    widgets::canvas::{Canvas, Context, Map, MapResolution, Circle, Points},
     text::{Span},
     text,
     layout::{Constraint, Rect, Direction, Layout},
@@ -65,11 +62,10 @@ fn paint_map(ctx: &mut Context, sat: &Satellite)
     });
     ctx.layer();    // Go one layer above
                     //
-    ctx.draw(&Rectangle {
+    ctx.draw(&Circle {
         x: (sat.getLongitude()* 180.0/3.14159),
         y: (sat.getLatitude()* 180.0/3.14159),
-        width: 10.0,
-        height: 10.0,
+        radius: 5.0,
         color: Color::Yellow,
     });
 
@@ -123,7 +119,7 @@ fn draw_coords(f: &mut Frame, chunk: Rect, sat: &Satellite)
 
 fn main() -> Result<(), io::Error> {
 
-    let mut noaa_18 = Satellite::new("iss.tle");
+    let mut noaa_18 = Satellite::new("noaa.tle");
     noaa_18.print();    // TODO: Implement to_string
     
     // Set the update interval (e.g., 1 second)

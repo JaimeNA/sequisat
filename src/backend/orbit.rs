@@ -1,4 +1,4 @@
-use crate::tle::TLE;
+use super::tle::TLE;
 
 pub struct Orbit {
     /// B star

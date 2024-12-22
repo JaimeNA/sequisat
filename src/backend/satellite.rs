@@ -1,7 +1,7 @@
 
-use crate::orbit::Orbit;
-use crate::tle::TLE;
-use crate::propagator::SGP4;
+use super::orbit::Orbit;
+use super::tle::TLE;
+use super::propagator::SGP4;
 
 use chrono::{Utc, TimeZone, NaiveDate, NaiveTime, Timelike};
 use julian::{Calendar, Month};
@@ -60,7 +60,7 @@ impl Satellite
     {
         self.points.clear();
         
-        for i in 0..180
+        for i in -60..60
         {
             self.gst = self.getGST(Self::get_julian_day() + (i as f64 / (60.0*24.0)));
             self.propagator.propagate(self.time_since_epoch_in_minutes() + i as f64);

@@ -1,5 +1,5 @@
 
-use crate::orbit::Orbit;
+use super::orbit::Orbit;
 
 pub enum HighAltitude {
     No {},
