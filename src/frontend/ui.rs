@@ -57,8 +57,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
      ctx.layer();    // Go one layer above
                      //
      ctx.draw(&Circle {
-         x: (app.sat.getLongitude()* 180.0/3.14159),
-         y: (app.sat.getLatitude()* 180.0/3.14159),
+         x: (app.sat.get_longitude()* 180.0/3.14159),
+         y: (app.sat.get_latitude()* 180.0/3.14159),
          radius: 5.0,
          color: Color::Yellow,
      });
@@ -81,15 +81,15 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
      let text = vec![
          text::Line::from(vec![
              Span::from("Altitude: "),
-             Span::styled(app.sat.getAltitude().to_string(), Style::default().fg(Color::Red)),
+             Span::styled(app.sat.get_altitude().to_string(), Style::default().fg(Color::Red)),
          ]),
          text::Line::from(vec![
              Span::from("Latitude: "),
-             Span::styled((app.sat.getLatitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Blue)),
+             Span::styled((app.sat.get_latitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Blue)),
          ]),
          text::Line::from(vec![
              Span::from("Longitud: "),
-             Span::styled((app.sat.getLongitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Green)),
+             Span::styled((app.sat.get_longitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Green)),
          ])
      ];
  
@@ -108,17 +108,62 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
  
      let text = vec![
          text::Line::from(vec![
-             Span::from("Altitude: "),
-             Span::styled(app.sat.getAltitude().to_string(), Style::default().fg(Color::Red)),
+             Span::from("Satellite Catalog Number: "),
+             Span::styled(app.sat.get_tle().get_catalog_number().to_string(), Style::default().fg(Color::Yellow)),
          ]),
          text::Line::from(vec![
-             Span::from("Latitude: "),
-             Span::styled((app.sat.getLatitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Blue)),
+            Span::from("Classification: "),
+            Span::styled(app.sat.get_tle().get_classification(), Style::default().fg(Color::Yellow)),
          ]),
          text::Line::from(vec![
-             Span::from("Longitud: "),
-             Span::styled((app.sat.getLongitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Green)),
-         ])
+            Span::from("Launch Year: "),
+            Span::styled(app.sat.get_tle().get_launch_year().to_string(), Style::default().fg(Color::Yellow)),
+         ]),
+         text::Line::from(vec![
+            Span::from("Launch Piece: "),
+            Span::styled(app.sat.get_tle().get_launch_piece().to_string(), Style::default().fg(Color::Yellow)),
+         ]),
+         // TODO: change color of smth to mark them as different
+         text::Line::from(vec![
+            Span::from("Epoch Year: "),
+            Span::styled(app.sat.get_tle().get_epoch_year().to_string(), Style::default().fg(Color::Yellow)),
+         ]),
+         text::Line::from(vec![
+            Span::from("Epoch Day of Year: "),
+            Span::styled(format!("{:.5}", app.sat.get_tle().get_epoch_day().to_string()), Style::default().fg(Color::Yellow)),
+         ]),
+         text::Line::from(vec![
+            Span::from("Ballistic Coefficient: "),
+            Span::styled(format!("{:.10}", app.sat.get_tle().get_ballistic_coefficient()).to_string(), Style::default().fg(Color::Yellow)),
+         ]),
+         text::Line::from(vec![
+            Span::from("Drag Term: "),
+            Span::styled(format!("{:.10}", app.sat.get_tle().get_drag_term().to_string()), Style::default().fg(Color::Yellow)),
+         ]),
+         text::Line::from(vec![
+            Span::from("Inclination(rads): "),
+            Span::styled(format!("{:.5}", app.sat.get_tle().get_inclination().to_string()), Style::default().fg(Color::Yellow)),
+         ]),
+         text::Line::from(vec![
+            Span::from("Right Ascension(rads): "),
+            Span::styled(format!("{:.5}", app.sat.get_tle().get_right_ascension().to_string()), Style::default().fg(Color::Yellow)),
+         ]),
+         text::Line::from(vec![
+            Span::from("Eccentricity: "),
+            Span::styled(format!("{:.5}", app.sat.get_tle().get_eccetricity().to_string()), Style::default().fg(Color::Yellow)),
+         ]),
+         text::Line::from(vec![
+            Span::from("Argument of Perigee(rads): "),
+            Span::styled(format!("{:.5}", app.sat.get_tle().get_argument_of_perigee().to_string()), Style::default().fg(Color::Yellow)),
+         ]),
+         text::Line::from(vec![
+            Span::from("Mean Anomaly(rads): "),
+            Span::styled(format!("{:.5}", app.sat.get_tle().get_mean_anomaly().to_string()), Style::default().fg(Color::Yellow)),
+         ]),
+         text::Line::from(vec![
+            Span::from("Mean Motion(rads/min): "),
+            Span::styled(format!("{:.5}", app.sat.get_tle().get_mean_motion().to_string()), Style::default().fg(Color::Yellow)),
+         ]),
      ];
  
      let data = Paragraph::new(text)
@@ -127,3 +172,5 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
  
      frame.render_widget(data, area); 
  }
+
+// TODO: check good practices for functions visibility

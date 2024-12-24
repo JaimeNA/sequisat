@@ -201,12 +201,77 @@ impl TLE
         println!("Mean Motion(radians/min):   {}", self.mean_motion);
     }
 
+    // Getters
+
     pub fn get_catalog_number(&self) -> i32
     {
         return self.catalog_number;
     }
 
+    pub fn get_classification(&self) -> String
+    {
+        return self.classification.clone();
+    }
     
+    pub fn get_launch_year(&self) -> i32
+    {
+        return self.launch_year;
+    }
+    
+    pub fn get_launch_piece(&self) -> char
+    {
+        return self.launch_piece;
+    }
+    
+    pub fn get_epoch_year(&self) -> i32
+    {
+        return self.epoch_year;
+    }
+    
+    pub fn get_epoch_day(&self) -> f64
+    {
+        return self.epoch_day;
+    }
+    
+    pub fn get_ballistic_coefficient(&self) -> f64
+    {
+        return self.ballistic_coefficient;
+    }
+    
+    pub fn get_drag_term(&self) -> f64
+    {
+        return self.drag_term;
+    }
+    
+    pub fn get_inclination(&self) -> f64
+    {
+        return self.inclination;
+    }
+    
+    pub fn get_right_ascension(&self) -> f64
+    {
+        return self.right_ascension;
+    }
+    
+    pub fn get_eccetricity(&self) -> f64
+    {
+        return self.eccentricity;
+    }
+    
+    pub fn get_argument_of_perigee(&self) -> f64
+    {
+        return self.argument_of_perigee;
+    }
+    
+    pub fn get_mean_anomaly(&self) -> f64
+    {
+        return self.mean_anomaly;
+    }
+
+    pub fn get_mean_motion(&self) -> f64
+    {
+        return self.mean_motion;
+    }
 }
 
 

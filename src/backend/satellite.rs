@@ -62,13 +62,13 @@ impl Satellite
         
         for i in -60..60
         {
-            self.gst = self.getGST(Self::get_julian_day() + (i as f64 / (60.0*24.0)));
+            self.gst = self.get_GST(Self::get_julian_day() + (i as f64 / (60.0*24.0)));
             self.propagator.propagate(self.time_since_epoch_in_minutes() + i as f64);
-            self.points.push((self.getLongitude() * (180.0/core::f64::consts::PI), self.getLatitude() * (180.0/core::f64::consts::PI)));
+            self.points.push((self.get_longitude() * (180.0/core::f64::consts::PI), self.get_latitude() * (180.0/core::f64::consts::PI)));
         }
     }
 
-    pub fn getGST(&self, julian_time: f64) -> f64
+    fn get_GST(&self, julian_time: f64) -> f64
     {
         let J2000 = 2451545.0;  // Epoch of reference
 
@@ -90,24 +90,29 @@ impl Satellite
         return GMST_rads;
     }
 
-    pub fn getAltitude(&self) -> f64
+    pub fn get_altitude(&self) -> f64
     {
         return self.propagator.getAltitude();
     }
 
-    pub fn getLatitude(&self) -> f64
+    pub fn get_latitude(&self) -> f64
     {
         return self.propagator.getLatitude();
     }
 
-    pub fn getLongitude(&self) -> f64
+    pub fn get_longitude(&self) -> f64
     {
         return (self.propagator.getLongitude() - self.gst + core::f64::consts::PI).rem_euclid(2.0*core::f64::consts::PI) - core::f64::consts::PI; // Normalize to range
     }
 
+    pub fn get_tle(&self) -> &TLE
+    {
+        return &self.tle;
+    }
+
     pub fn update_position(&mut self)
     {
-        self.gst = self.getGST(Self::get_julian_day());
+        self.gst = self.get_GST(Self::get_julian_day());
 
         self.propagator.propagate(self.time_since_epoch_in_minutes());
     }
