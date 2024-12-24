@@ -47,28 +47,6 @@ pub struct TLE {
 
 impl TLE
 {
-    pub fn print_data(&self)
-    {
-        println!("TLE Data: ");
-        println!("  ----- General Information ----- ");
-        println!("Satellite Catalog Number:   {}", self.catalog_number);
-        println!("Classification:             {}", self.classification);
-        println!("Launch Year:                {}", self.launch_year);
-        println!("Launch Piece:               {}", self.launch_piece);
-
-        println!("\n  ----- Epoch Orbit Information ----- ");
-        println!("Epoch Year:                 {}", self.epoch_year);
-        println!("Epoch Day Of Year:          {}", self.epoch_day);
-        println!("Ballistic Coefficient:      {}", self.ballistic_coefficient);
-        println!("Drag Term:                  {}", self.drag_term);
-        println!("Inclination(rads):          {}", self.inclination);
-        println!("Right Ascension(rads):      {}", self.right_ascension);
-        println!("Eeccentricity:              {}", self.eccentricity);
-        println!("Argument of Perigee(rads):  {}", self.argument_of_perigee);
-        println!("Mean Anomaly(rads):         {}", self.mean_anomaly);
-        println!("Mean Motion(radians/min):   {}", self.mean_motion);
-    }
-
     pub fn new(file_path: &str) -> Self
     {
         let contents = fs::read_to_string(file_path)
@@ -200,6 +178,35 @@ impl TLE
             mean_motion: mean_motion
         }
     }
+
+    pub fn print_data(&self)
+    {
+        println!("TLE Data: ");
+        println!("  ----- General Information ----- ");
+        println!("Satellite Catalog Number:   {}", self.catalog_number);
+        println!("Classification:             {}", self.classification);
+        println!("Launch Year:                {}", self.launch_year);
+        println!("Launch Piece:               {}", self.launch_piece);
+
+        println!("\n  ----- Epoch Orbit Information ----- ");
+        println!("Epoch Year:                 {}", self.epoch_year);
+        println!("Epoch Day Of Year:          {}", self.epoch_day);
+        println!("Ballistic Coefficient:      {}", self.ballistic_coefficient);
+        println!("Drag Term:                  {}", self.drag_term);
+        println!("Inclination(rads):          {}", self.inclination);
+        println!("Right Ascension(rads):      {}", self.right_ascension);
+        println!("Eeccentricity:              {}", self.eccentricity);
+        println!("Argument of Perigee(rads):  {}", self.argument_of_perigee);
+        println!("Mean Anomaly(rads):         {}", self.mean_anomaly);
+        println!("Mean Motion(radians/min):   {}", self.mean_motion);
+    }
+
+    pub fn get_catalog_number(&self) -> i32
+    {
+        return self.catalog_number;
+    }
+
+    
 }
 
 

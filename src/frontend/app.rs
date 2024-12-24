@@ -1,5 +1,4 @@
-
-use backend::satellite::Satellite;
+use crate::Satellite;
 
 pub struct App {
     pub sat: Satellite,
@@ -7,11 +6,15 @@ pub struct App {
 }   
 
 impl App {
-    pub fn new(sat: Satellite) {
+    pub fn new(sat: Satellite) -> App{
         Self {
             sat: sat,
             should_quit: false,
         }
     }
 
+    pub fn on_tick(&mut self) {
+        self.sat.get_trajectory();
+        self.sat.update_position();
+    }
 }

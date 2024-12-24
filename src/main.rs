@@ -1,123 +1,100 @@
 mod backend;
-mod app;
-mod ui;
-mod crossterm;
+mod frontend;
+
+use frontend::{app::App, ui};
 
 use backend::satellite::Satellite;
-use std::{io, thread};
-use std::time::{Duration, Instant};
+use std::thread;
 
-use ratatui::symbols;
+use std::{
+    error::Error,
+    io,
+    time::{Duration, Instant},
+};
 
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    style::{Style, Color},
-    widgets::{Block, Borders, Paragraph},
-    widgets::canvas::{Canvas, Context, Map, MapResolution, Circle, Points},
-    text::{Span},
-    text,
-    layout::{Constraint, Rect, Direction, Layout},
-    Frame,
-    Terminal
+    style::Color,
+    crossterm::{
+        event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
+        execute,
+        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    },
+    Terminal,
 };
 
-use crossterm::event;
+pub fn run(tick_rate: Duration, enhanced_graphics: bool) -> Result<(), Box<dyn Error>> {
+    // setup terminal
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
 
-use crossterm::{
-    execute,
-    terminal::{enable_raw_mode, disable_raw_mode, LeaveAlternateScreen, EnterAlternateScreen},
-    event::{Event, KeyCode, DisableMouseCapture, EnableMouseCapture},
-};
+    // create app and run it
+    let app = App::new(Satellite::new("noaa.tle"));
+    let app_result = run_app(&mut terminal, app, tick_rate);
 
-fn ui(f: &mut Frame, sat: &Satellite) {
-   let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .margin(1)
-        .constraints(
-            [
-                Constraint::Percentage(20),
-                Constraint::Percentage(80)
-            ].as_ref()
-        )
-        .split(f.size());
+    // restore terminal
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
+    terminal.show_cursor()?;
 
-    draw_coords(f, chunks[0], sat);
+    if let Err(err) = app_result {
+        println!("{err:?}");
+    }
 
-    let map = Canvas::default()
-        .block(Block::default().title("World").borders(Borders::ALL))
-        .paint(|ctx| paint_map(ctx, sat))
-        .marker(symbols::Marker::Braille)
-        .x_bounds([-180.0, 180.0])
-        .y_bounds([-90.0, 90.0]);
-
-    let block = Block::default()
-         .title("Block 2")
-         .borders(Borders::ALL);
-    f.render_widget(map, chunks[1]);
+    Ok(())
 }
 
-fn paint_map(ctx: &mut Context, sat: &Satellite)
-{
-    
-    ctx.draw(&Map {
-        color: Color::White,
-        resolution: MapResolution::High,
-    });
-    ctx.layer();    // Go one layer above
-                    //
-    ctx.draw(&Circle {
-        x: (sat.getLongitude()* 180.0/3.14159),
-        y: (sat.getLatitude()* 180.0/3.14159),
-        radius: 5.0,
-        color: Color::Yellow,
-    });
+fn run_app<B: Backend>(
+    terminal: &mut Terminal<B>,
+    mut app: App,
+    tick_rate: Duration,
+) -> io::Result<()> {
+    let mut last_tick = Instant::now();
+    loop {
+        terminal.draw(|frame| ui::draw(frame, &mut app))?;
 
-    ctx.layer();
-
-    ctx.draw(&Points {
-        coords: sat.get_points(),
-        color: Color::Green
-    });
-}
+        let timeout = tick_rate.saturating_sub(last_tick.elapsed());
 
 
-fn draw_coords(f: &mut Frame, chunk: Rect, sat: &Satellite)
-{
-    let coords = Block::default()
-        .title("Coordinates")
-        .borders(Borders::ALL);
+        if event::poll(timeout)? {
+            if let Event::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Char(q) => break,
+                    _ => {}
+                }
+            }
+        }
 
-    let text = vec![
-        text::Line::from(vec![
-            Span::from("Altitude: "),
-            Span::styled(sat.getAltitude().to_string(), Style::default().fg(Color::Red)),
-        ]),
-        text::Line::from(vec![
-            Span::from("Latitude: "),
-            Span::styled((sat.getLatitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Blue)),
-        ]),
-        text::Line::from(vec![
-            Span::from("Longitud: "),
-            Span::styled((sat.getLongitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Green)),
-        ])
-    ];
-
-    let altitude = Paragraph::new(text)
-        .block(coords)
-        .style(Style::default().fg(Color::White));
-
-
-   // let latitude = Paragraph::new(format!("Latitude: {}", sat.getLatitude()))
-   //     .block(coords)
-   //     .style(Style::default().fg(Color::White));
-
-    //let longitude = Paragraph::new(format!("Longitude: {}", sat.getLongitude()))
-    //    .block(coords)
-    //    .style(Style::default().fg(Color::White));
-
-    f.render_widget(altitude, chunk); 
-    //f.render_widget(latitude, chunk);
-    //f.render_widget(longitude, chunk);
+        // if event::poll(timeout)? {
+        //     if let Event::Key(key) = event::read()? {
+        //         if key.kind == KeyEventKind::Press {
+        //             match key.code {
+        //                 KeyCode::Left | KeyCode::Char('h') => app.on_left(),
+        //                 KeyCode::Up | KeyCode::Char('k') => app.on_up(),
+        //                 KeyCode::Right | KeyCode::Char('l') => app.on_right(),
+        //                 KeyCode::Down | KeyCode::Char('j') => app.on_down(),
+        //                 KeyCode::Char(c) => app.on_key(c),
+        //                 _ => {}
+        //             }
+        //         }
+        //     }
+        // }
+        if last_tick.elapsed() >= tick_rate {
+            app.on_tick();
+            last_tick = Instant::now();
+        }
+        if app.should_quit {
+            return Ok(());
+        }
+    }
+    Ok(())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -156,8 +133,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //     }
     // }
     
-    #[cfg(feature = "crossterm")]
-    crate::crossterm::run(tick_rate, true)?;
+    run(tick_rate, true)?;
 
     Ok(())
 }
