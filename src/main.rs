@@ -25,13 +25,13 @@ use ratatui::{
 
 pub fn run(tick_rate: Duration, enhanced_graphics: bool) -> io::Result<()> {
 
-    // // create app and run it
-    // let app = App::new(Satellite::new("noaa.tle"));
-    // let app_result = run_app(&mut terminal, app, tick_rate);
-
     let mut terminal = ratatui::init();
-    let app_result = App::new(Satellite::new("noaa.tle")).run(&mut terminal);
+    // create app and run it
+    let app = App::new(Satellite::new("noaa.tle"));
+    let app_result = run_app(&mut terminal, app, tick_rate);
+
     ratatui::restore();
+
     app_result
 }
 
@@ -74,7 +74,7 @@ fn run_app<B: Backend>(
             app.on_tick();
             last_tick = Instant::now();
         }
-        if app.exit {
+        if app.should_quit {
             return Ok(());
         }
     }
