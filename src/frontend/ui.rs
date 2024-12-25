@@ -38,8 +38,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
          .direction(Direction::Vertical)
          .constraints(
              [
-                 Constraint::Percentage(10),
-                 Constraint::Percentage(90)
+                 Constraint::Percentage(15),
+                 Constraint::Percentage(85)
              ].as_ref()
          )
          .split(chunks[1]);
@@ -71,7 +71,6 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
      });
  }
  
- 
  fn draw_coords(frame: &mut Frame, app: &mut App, area: Rect)
  {
      let position_data = Block::default()
@@ -81,15 +80,15 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
      let text = vec![
          text::Line::from(vec![
              Span::from("Altitude: "),
-             Span::styled(app.sat.get_altitude().to_string(), Style::default().fg(Color::Red)),
+             Span::styled(format!("{:.5} km", app.sat.get_altitude().to_string()), Style::default().fg(Color::Red)),
          ]),
          text::Line::from(vec![
              Span::from("Latitude: "),
-             Span::styled((app.sat.get_latitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Blue)),
+             Span::styled(format!("{:.5} deg", (app.sat.get_latitude() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
          ]),
          text::Line::from(vec![
              Span::from("Longitud: "),
-             Span::styled((app.sat.get_longitude() * (180.0/core::f64::consts::PI)).to_string(), Style::default().fg(Color::Green)),
+             Span::styled(format!("{:.5} deg", (app.sat.get_longitude() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
          ])
      ];
  
