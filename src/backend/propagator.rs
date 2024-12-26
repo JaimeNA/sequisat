@@ -197,41 +197,41 @@ impl SGP4
     }
 
     // Note: this provides the coordinates in TEME, meaning that it doesnt have an earth-fixed frame, that would be the ECEF
-    pub fn propagate(&mut self, deltaTime: f64)
+    pub fn propagate(&mut self, delta_time: f64)
     {
         let mdf = self.orbit_0.mean_anomaly + (1.0 + (3.0*K2 * (-1.0+3.0*self.phita*self.phita))/(2.0*self.semimayor_axis*self.semimayor_axis*self.beta0.powi(3))
             + (3.0*K2*K2 * (13.0 - 78.0*self.phita*self.phita + 137.0*self.phita.powi(4)))/(16.0*self.semimayor_axis.powi(4)*self.beta0.powi(7)))
-            * self.orbit_0.mean_motion*deltaTime;
+            * self.orbit_0.mean_motion*delta_time;
  
         let wdf = self.orbit_0.argument_of_perigee + (-(3.0*K2 * (1.0-5.0*self.phita*self.phita))/(2.0*self.semimayor_axis*self.semimayor_axis*self.beta0.powi(4)) 
             + (3.0*K2*K2 * (7.0 - 114.0*self.phita*self.phita + 395.0*self.phita.powi(4)))/(16.0*self.semimayor_axis.powi(4)*self.beta0.powi(7))
             + (5.0*K4 * (3.0-36.0*self.phita*self.phita+49.0*self.phita.powi(4)))/(4.0*self.semimayor_axis.powi(4)*self.beta0.powi(8)))
-            * self.orbit_0.mean_motion*deltaTime;
+            * self.orbit_0.mean_motion*delta_time;
 
         let omegadf = self.orbit_0.right_ascension + (-( 3.0*K2*self.phita ) / ( self.semimayor_axis*self.semimayor_axis*self.beta0.powi(4) )
             + ( 3.0*K2*K2*(4.0*self.phita - 19.0*self.phita.powi(3)) ) / ( 2.0*self.semimayor_axis.powi(4)*self.beta0.powi(8) )
             + (5.0*K4*self.phita*(3.0 - 7.0*self.phita*self.phita))/(2.0*self.semimayor_axis.powi(4)*self.beta0.powi(8)))
-            * self.orbit_0.mean_motion*deltaTime;
+            * self.orbit_0.mean_motion*delta_time;
 
-        let deltaw = self.orbit_0.drag_term * self.c3 * self.orbit_0.argument_of_perigee.cos() * deltaTime;
-        let deltaM = -(2.0/3.0) * Q0MS2T * self.orbit_0.drag_term * self.exilon.powi(4)
+        let deltaw = self.orbit_0.drag_term * self.c3 * self.orbit_0.argument_of_perigee.cos() * delta_time;
+        let delta_m = -(2.0/3.0) * Q0MS2T * self.orbit_0.drag_term * self.exilon.powi(4)
                 * (AE / (self.orbit_0.eccentricity*self.eta)) 
                 * ((1.0 + self.eta*mdf.cos()).powi(3) - (1.0 + self.eta*self.orbit_0.mean_anomaly.cos()).powi(3));
 
-        let mp = mdf + deltaw + deltaM;
+        let mp = mdf + deltaw + delta_m;
 
-        let w = wdf - deltaw - deltaM;
+        let w = wdf - deltaw - delta_m;
         let omega = omegadf - 10.5*((self.orbit_0.mean_motion*K2*self.phita) / (self.semimayor_axis*self.semimayor_axis*self.beta0*self.beta0))
-                * self.c1*deltaTime*deltaTime;
-        let e = self.orbit_0.eccentricity - self.orbit_0.drag_term*self.c4*deltaTime
+                * self.c1*delta_time*delta_time;
+        let e = self.orbit_0.eccentricity - self.orbit_0.drag_term*self.c4*delta_time
             - self.orbit_0.drag_term*self.c5*(mp.sin() - self.orbit_0.mean_anomaly.sin()); // Does using radians instead of degrees affect the propagation?
-        let a = self.semimayor_axis*(1.0 - self.c1*deltaTime - self.d2*deltaTime*deltaTime - self.d3*deltaTime.powi(3)
-            - self.d4*deltaTime.powi(4)).powi(2);
+        let a = self.semimayor_axis*(1.0 - self.c1*delta_time - self.d2*delta_time*delta_time - self.d3*delta_time.powi(3)
+            - self.d4*delta_time.powi(4)).powi(2);
 
-        let il = mp + w + omega + self.orbit_0.mean_motion*(1.5*self.c1*deltaTime*deltaTime + (self.d2+2.0*self.c1*self.c1)*deltaTime.powi(3)
-            + 0.25*(3.0*self.d3 + 12.0*self.c1*self.d2 + 10.0*self.c1.powi(3))*deltaTime.powi(4)
+        let il = mp + w + omega + self.orbit_0.mean_motion*(1.5*self.c1*delta_time*delta_time + (self.d2+2.0*self.c1*self.c1)*delta_time.powi(3)
+            + 0.25*(3.0*self.d3 + 12.0*self.c1*self.d2 + 10.0*self.c1.powi(3))*delta_time.powi(4)
             + 0.2*(3.0*self.d4 + 12.0*self.c1*self.d3 + 6.0*self.d2*self.d2 + 30.0*self.c1*self.c1*self.d2 + 15.0*self.c1.powi(4))
-            *deltaTime.powi(5));
+            *delta_time.powi(5));
 
         let b = (1.0-e*e).sqrt();
         //let n = KE / a.powf(1.5);
@@ -325,17 +325,17 @@ impl SGP4
         self.lon = longitude;
     }
 
-    pub fn getAltitude(&self) -> f64
+    pub fn get_altitude(&self) -> f64
     {
         return self.alt;
     }
 
-    pub fn getLatitude(&self) -> f64
+    pub fn get_latitude(&self) -> f64
     {
         return self.lat;
     }
 
-    pub fn getLongitude(&self) -> f64
+    pub fn get_longitude(&self) -> f64
     {
         return self.lon;
     }
