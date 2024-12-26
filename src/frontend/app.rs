@@ -36,7 +36,7 @@ impl<'a> App<'a> {
         Self {
             title,
             sat,
-            tabs: TabsState::new(vec!["Tab0", "Tab1", "Tab2"]),
+            tabs: TabsState::new(vec!["Map Projection", "Azimuthal Projection", "About"]),
             should_quit: false,
         }
     }

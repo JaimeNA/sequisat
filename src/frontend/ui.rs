@@ -31,13 +31,31 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     ]);
     let [title_bar, tab, bottom_bar] = vertical.areas(frame.area());
  
+    draw_title_bar(frame, app, title_bar);
+
+    match app.tabs.index {
+        0 => draw_map_tab(frame, app, tab),
+        1 => draw_tle_data(frame, app, tab),
+        _ => {}
+    };
+}
+
+fn draw_title_bar(frame: &mut Frame, app: &mut App, area: Rect)
+{
+    let layout = Layout::horizontal([Constraint::Min(0), Constraint::Length(43)]);
+    let [title_area, tabs_area] = layout.areas(area);
+
+    let title = Span::styled(app.title, Style::new()
+        .fg(WHITE)
+        .add_modifier(Modifier::BOLD));
+
     let tabs = app
         .tabs
         .titles
         .iter()
         .map(|t| text::Line::from(Span::styled(*t, Style::default().fg(Color::Green))))
         .collect::<Tabs>()
-        .divider("")
+        .divider("|")
         .padding("", "")
         .highlight_style(Style::new()
             .fg(WHITE)
@@ -46,15 +64,14 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             .add_modifier(Modifier::REVERSED))
         .select(app.tabs.index);
 
-     frame.render_widget(tabs, title_bar);
-     draw_map_tab(frame, app, tab);
+    frame.render_widget(title, title_area);
+    frame.render_widget(tabs, tabs_area);
 }
 
 fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
 {
     let chunks = Layout::default()
          .direction(Direction::Horizontal)
-         .margin(1)
          .constraints(
              [
                  Constraint::Percentage(80),
