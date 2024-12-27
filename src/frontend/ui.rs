@@ -35,7 +35,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     match app.tabs.index {
         0 => draw_map_tab(frame, app, tab),
-        1 => draw_tle_data(frame, app, tab),
+        1 => draw_azimuth_tab(frame, app, tab),
         _ => {}
     };
 }
@@ -98,10 +98,36 @@ fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
              ].as_ref()
          )
          .split(chunks[1]);
-     draw_coords(frame, app, chunklin[0]);
-     draw_tle_data(frame, app, chunklin[1]);
+     draw_sat_coords(frame, app, chunklin[0]);
+     draw_user_coords(frame, app, chunklin[1]);
 }
- 
+
+fn draw_azimuth_tab(frame: &mut Frame, app: &mut App, area: Rect)
+{
+
+    let map = Canvas::default()
+    .block(Block::default().title("Azimuth").borders(Borders::ALL))
+    .paint(|ctx| paint_azimuth(ctx, app))
+    .marker(symbols::Marker::Braille)
+    .x_bounds([-180.0, 180.0])
+    .y_bounds([-180.0, 180.0]);
+
+    frame.render_widget(map, area);    
+}
+
+fn paint_azimuth(ctx: &mut Context, app: &App)
+{
+    ctx.draw(&Circle {
+        x: 0.0,
+        y: 0.0,
+        radius: 90.0,
+        color: Color::Yellow,
+    });
+
+    ctx.layer();
+
+}
+
  fn paint_map(ctx: &mut Context, app: &App)
  {
      
@@ -109,13 +135,14 @@ fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
          color: Color::White,
          resolution: MapResolution::High,
      });
-     ctx.layer();    // Go one layer above
-                     //
+
+     ctx.layer();    
+     
      ctx.draw(&Circle {
-         x: (app.sat.get_longitude()* 180.0/3.14159),
-         y: (app.sat.get_latitude()* 180.0/3.14159),
-         radius: 5.0,
-         color: Color::Yellow,
+         x: get_user_location().1,
+         y: get_user_location().0,
+         radius: 1.0,
+         color: Color::Red,
      });
  
      ctx.layer();
@@ -124,12 +151,46 @@ fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
          coords: app.sat.get_points(),
          color: Color::Green
      });
+
+     ctx.layer();    // Go one layer above
+                     //
+     ctx.draw(&Circle {
+         x: (app.sat.get_longitude()* 180.0/3.14159),
+         y: (app.sat.get_latitude()* 180.0/3.14159),
+         radius: 5.0,
+         color: Color::Yellow,
+     });
  }
  
- fn draw_coords(frame: &mut Frame, app: &mut App, area: Rect)
+fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
+{
+
+    let position_data = Block::default()
+    .title("User Coordinates")
+    .borders(Borders::ALL);
+
+    let text = vec![
+        text::Line::from(vec![
+            Span::from("Latitude: "),
+            Span::styled(format!("{:.5} deg", get_user_location().0.to_string()), Style::default().fg(Color::Blue)),
+        ]),
+        text::Line::from(vec![
+            Span::from("Longitude: "),
+            Span::styled(format!("{:.5} deg", get_user_location().1.to_string()), Style::default().fg(Color::Green)),
+        ])
+    ];
+
+    let data = Paragraph::new(text)
+        .block(position_data)
+        .style(Style::default().fg(Color::White));
+
+    frame.render_widget(data, area);   
+}
+
+ fn draw_sat_coords(frame: &mut Frame, app: &mut App, area: Rect) // Repeated code, fix later
  {
      let position_data = Block::default()
-         .title("Coordinates")
+         .title("Satellite Coordinates")
          .borders(Borders::ALL);
  
      let text = vec![
@@ -142,7 +203,7 @@ fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
              Span::styled(format!("{:.5} deg", (app.sat.get_latitude() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
          ]),
          text::Line::from(vec![
-             Span::from("Longitud: "),
+             Span::from("Longitude: "),
              Span::styled(format!("{:.5} deg", (app.sat.get_longitude() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
          ])
      ];
@@ -226,5 +287,11 @@ fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
  
      frame.render_widget(data, area); 
  }
-
 // TODO: check good practices for functions visibility
+
+// EXPERIMENTAL
+
+fn get_user_location() -> (f64, f64) // Latitude and longitude
+{
+    return (-34.603599, -58.381555);
+}
