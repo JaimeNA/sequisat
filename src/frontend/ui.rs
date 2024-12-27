@@ -36,6 +36,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     match app.tabs.index {
         0 => draw_map_tab(frame, app, tab),
         1 => draw_azimuth_tab(frame, app, tab),
+        2 => draw_tle_data(frame, app, tab),
         _ => {}
     };
 }
