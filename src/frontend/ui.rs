@@ -1,5 +1,7 @@
 use crate::App;
 
+use crate::Vector3;
+
 use ratatui::{
     style::{Style, Color, Modifier},
     widgets::{Borders, Block, Paragraph, Tabs},
@@ -116,19 +118,6 @@ fn draw_azimuth_tab(frame: &mut Frame, app: &mut App, area: Rect)
     frame.render_widget(map, area);    
 }
 
-fn paint_azimuth(ctx: &mut Context, app: &App)
-{
-    ctx.draw(&Circle {
-        x: 0.0,
-        y: 0.0,
-        radius: 90.0,
-        color: Color::Yellow,
-    });
-
-    ctx.layer();
-
-}
-
  fn paint_map(ctx: &mut Context, app: &App)
  {
      
@@ -140,8 +129,8 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
      ctx.layer();    
      
      ctx.draw(&Circle {
-         x: get_user_location().1,
-         y: get_user_location().0,
+         x: get_user_location().get_y(),
+         y: get_user_location().get_z(),
          radius: 1.0,
          color: Color::Red,
      });
@@ -172,12 +161,12 @@ fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
 
     let text = vec![
         text::Line::from(vec![
-            Span::from("Latitude: "),
-            Span::styled(format!("{:.5} deg", get_user_location().0.to_string()), Style::default().fg(Color::Blue)),
+            Span::from("Longitude: "),
+            Span::styled(format!("{:.5} deg", get_user_location().get_y().to_string()), Style::default().fg(Color::Green)),
         ]),
         text::Line::from(vec![
-            Span::from("Longitude: "),
-            Span::styled(format!("{:.5} deg", get_user_location().1.to_string()), Style::default().fg(Color::Green)),
+            Span::from("Latitude: "),
+            Span::styled(format!("{:.5} deg", get_user_location().get_z().to_string()), Style::default().fg(Color::Blue)),
         ])
     ];
 
@@ -200,12 +189,12 @@ fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
              Span::styled(format!("{:.5} km", app.sat.get_altitude().to_string()), Style::default().fg(Color::Red)),
          ]),
          text::Line::from(vec![
-             Span::from("Latitude: "),
-             Span::styled(format!("{:.5} deg", (app.sat.get_latitude() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
-         ]),
-         text::Line::from(vec![
              Span::from("Longitude: "),
              Span::styled(format!("{:.5} deg", (app.sat.get_longitude() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
+         ]),
+         text::Line::from(vec![
+             Span::from("Latitude: "),
+             Span::styled(format!("{:.5} deg", (app.sat.get_latitude() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
          ])
      ];
  
@@ -288,11 +277,58 @@ fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
  
      frame.render_widget(data, area); 
  }
+
+
+fn paint_azimuth(ctx: &mut Context, app: &App)
+{
+    ctx.draw(&Circle {
+        x: 0.0,
+        y: 0.0,
+        radius: 90.0,
+        color: Color::Yellow,
+    });
+
+    ctx.layer();
+
+    let usr = Vector3::new(0.0, -58.381555 * (core::f64::consts::PI/180.0), -34.603599 * (core::f64::consts::PI/180.0));
+    let mut sat = app.sat.get_position().clone();
+
+    sat.sub(&usr); // TODO: Make another vector type thats just for spheric coordinates
+
+    let sph_diff = cartesian_to_spheric(sat);
+    
+    ctx.draw(&Circle {
+        x: (-sph_diff.get_y() * 180.0/3.14159),
+        y: (sph_diff.get_z() * 180.0/3.14159),
+        radius: 5.0,
+        color: Color::Blue,
+    });
+}
 // TODO: check good practices for functions visibility
 
-// EXPERIMENTAL
+// EXPERIMENTAL - Will move later
 
-fn get_user_location() -> (f64, f64) // Latitude and longitude
+fn get_user_location() -> Vector3 // Radius, Longitude and Altitude
 {
-    return (-34.603599, -58.381555);
+    Vector3::new(0.0, -58.381555, -34.603599)
+}
+
+fn spheric_to_cartesian(position: Vector3) -> Vector3
+{
+    Vector3::new(
+        position.get_x()*position.get_y().cos()*position.get_z().sin(), 
+        position.get_x()*position.get_y().sin()*position.get_z().sin(), 
+        position.get_x()*position.get_z().cos()
+    )
+}
+
+fn cartesian_to_spheric(position: Vector3) -> Vector3
+{
+    let radius = (position.get_x().powi(2) + position.get_y().powi(2) + position.get_z().powi(2)).sqrt();
+    let longitude = position.get_y().atan2(position.get_x());
+
+
+    let latitude = (position.get_z() / (position.get_x().powi(2) + position.get_y().powi(2)).sqrt()).atan();
+
+    Vector3::new(radius, longitude, latitude)
 }

@@ -1,5 +1,6 @@
 
 use super::orbit::Orbit;
+use super::vector::Vector3;
 
 pub enum HighAltitude {
     No {},
@@ -96,6 +97,7 @@ pub struct SGP4
     d2:     f64,
     d3:     f64,
     d4:     f64,
+    position: Vector3, 
     lat: f64,
     lon: f64,
     alt: f64
@@ -120,6 +122,7 @@ impl SGP4
             d2:     0.0,
             d3:     0.0,
             d4:     0.0,
+            position: Vector3::new(0.0, 0.0, 0.0), 
             alt: 0.0,
             lon: 0.0,
             lat: 0.0
@@ -314,6 +317,12 @@ impl SGP4
         let ry = rk * uy;
         let rz = rk * uz;
 
+        self.position.set_x(rx); // Note: Altitude is in scale of ER, so 1.0 = ER
+        self.position.set_y(ry);
+        self.position.set_z(rz);
+
+        // TODO: Implement with vector and fix altitude
+
         let radius = (rx*rx + ry*ry + rz*rz).sqrt();
         let longitude = ry.atan2(rx);
 
@@ -323,6 +332,11 @@ impl SGP4
         self.alt = (radius - 1.0) * ER;
         self.lat = latitude;
         self.lon = longitude;
+    }
+
+    pub fn get_position(&self) -> &Vector3
+    {
+        &self.position
     }
 
     pub fn get_altitude(&self) -> f64

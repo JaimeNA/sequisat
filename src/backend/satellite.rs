@@ -2,6 +2,7 @@
 use super::orbit::Orbit;
 use super::tle::TLE;
 use super::propagator::SGP4;
+use super::vector::Vector3;
 
 use chrono::{Utc, TimeZone, NaiveDate, NaiveTime, Timelike};
 use julian::Calendar;
@@ -88,6 +89,11 @@ impl Satellite
         let gmst_rads = gmst_normalized * (core::f64::consts::PI/12.0);
 
         return gmst_rads;
+    }
+
+    pub fn get_position(&self) -> &Vector3
+    {
+        return self.propagator.get_position();
     }
 
     pub fn get_altitude(&self) -> f64

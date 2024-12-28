@@ -4,6 +4,7 @@ mod frontend;
 use frontend::{app::App, ui};
 
 use backend::satellite::Satellite;
+use backend::vector::Vector3;
 
 use std::{
     io,
