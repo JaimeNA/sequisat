@@ -290,16 +290,23 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
 
     ctx.layer();
 
-    let usr = Vector3::new(0.0, -58.381555 * (core::f64::consts::PI/180.0), -34.603599 * (core::f64::consts::PI/180.0));
+    let omega = -58.381555 * (core::f64::consts::PI/180.0);
+    let phi = -34.603599 * (core::f64::consts::PI/180.0);
+
+    let usr = Vector3::new(omega.cos()*phi.sin(), omega.sin()*phi.sin(), phi.cos());
     let mut sat = app.sat.get_position().clone();
 
     sat.sub(&usr); // TODO: Make another vector type thats just for spheric coordinates
 
-    let sph_diff = cartesian_to_spheric(sat);
+    let mut sph_diff = cartesian_to_spheric(sat);
+
+    let sph_usr = cartesian_to_spheric(usr);
+
+    sph_diff.sum(&sph_usr);
     
     ctx.draw(&Circle {
-        x: (-sph_diff.get_y() * 180.0/3.14159),
-        y: (sph_diff.get_z() * 180.0/3.14159),
+        x: (sph_diff.get_y() * 180.0/3.14159),
+        y: ((sph_diff.get_z().powi(2) - sph_diff.get_y().powi(2)).sqrt() * 180.0/3.14159),
         radius: 5.0,
         color: Color::Blue,
     });
