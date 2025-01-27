@@ -63,4 +63,25 @@ impl Vector3 {
     {
         self.z
     }
+
+
+    pub fn to_cartesian(&self) -> Vector3
+    {
+        Vector3::new(
+            self.get_x()*self.get_y().cos()*self.get_z().sin(), 
+            self.get_x()*self.get_y().sin()*self.get_z().sin(), 
+            self.get_x()*self.get_z().cos()
+        )
+    }
+
+    pub fn to_spheric(&self) -> Vector3
+    {
+        let radius = (self.get_x().powi(2) + self.get_y().powi(2) + self.get_z().powi(2)).sqrt();
+        let longitude = self.get_y().atan2(self.get_x());
+
+
+        let latitude = (self.get_z() / (self.get_x().powi(2) + self.get_y().powi(2)).sqrt()).atan(); // NOTE: Spherical coordinates differ from the mathematical ones
+
+        Vector3::new(radius, longitude, latitude)
+    }
 }

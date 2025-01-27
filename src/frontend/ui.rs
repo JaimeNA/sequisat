@@ -288,54 +288,39 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
         color: Color::Yellow,
     });
 
+    let lon = -58.381555 * (core::f64::consts::PI/180.0);
+    let lat = -34.603599 * (core::f64::consts::PI/180.0);
+
+    let usr_sph = Vector3::new(6378.0, lon, lat);
+    let mut sat_cart = app.sat.get_ecef_position();
+    
+    let diff_sph = get_horizontal_coordinates(&usr_sph, &sat_cart);
+    
     ctx.layer();
 
-    let omega = -58.381555 * (core::f64::consts::PI/180.0);
-    let phi = -34.603599 * (core::f64::consts::PI/180.0);
-
-    let usr = Vector3::new(omega.cos()*phi.sin(), omega.sin()*phi.sin(), phi.cos());
-    let mut sat = app.sat.get_position().clone();
-
-    sat.sub(&usr); // TODO: Make another vector type thats just for spheric coordinates
-
-    let mut sph_diff = cartesian_to_spheric(sat);
-
-    let sph_usr = cartesian_to_spheric(usr);
-
-    sph_diff.sum(&sph_usr);
-    
     ctx.draw(&Circle {
-        x: (sph_diff.get_y() * 180.0/3.14159),
-        y: ((sph_diff.get_z().powi(2) - sph_diff.get_y().powi(2)).sqrt() * 180.0/3.14159),
+        x: diff_sph.get_y().cos()*diff_sph.get_z().cos()*180.0,
+        y: diff_sph.get_y().sin()*diff_sph.get_z().cos()*180.0,
         radius: 5.0,
         color: Color::Blue,
     });
 }
-// TODO: check good practices for functions visibility
 
-// EXPERIMENTAL - Will move later
+fn get_horizontal_coordinates(usr_sph: &Vector3, sat_cart: &Vector3) -> Vector3
+{
+    let usr_cart = usr_sph.to_cartesian();
+    let mut sat_cart = sat_cart.clone();
+
+    sat_cart.sub(&usr_cart);
+
+    let mut diff_sph = sat_cart.to_spheric();
+
+    diff_sph.sum(&usr_sph);
+
+    return diff_sph.clone();
+}
 
 fn get_user_location() -> Vector3 // Radius, Longitude and Altitude
 {
     Vector3::new(0.0, -58.381555, -34.603599)
-}
-
-fn spheric_to_cartesian(position: Vector3) -> Vector3
-{
-    Vector3::new(
-        position.get_x()*position.get_y().cos()*position.get_z().sin(), 
-        position.get_x()*position.get_y().sin()*position.get_z().sin(), 
-        position.get_x()*position.get_z().cos()
-    )
-}
-
-fn cartesian_to_spheric(position: Vector3) -> Vector3
-{
-    let radius = (position.get_x().powi(2) + position.get_y().powi(2) + position.get_z().powi(2)).sqrt();
-    let longitude = position.get_y().atan2(position.get_x());
-
-
-    let latitude = (position.get_z() / (position.get_x().powi(2) + position.get_y().powi(2)).sqrt()).atan();
-
-    Vector3::new(radius, longitude, latitude)
 }

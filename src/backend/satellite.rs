@@ -91,9 +91,15 @@ impl Satellite
         return gmst_rads;
     }
 
-    pub fn get_position(&self) -> &Vector3
+    pub fn get_eci_position(&self) -> &Vector3
     {
         return self.propagator.get_position();
+    }
+
+    pub fn get_ecef_position(&self) -> Vector3 // (R, longitude, latitude)
+    {
+        let to_return = Vector3::new(6378.0 + self.get_altitude(), self.get_latitude(), self.get_latitude());
+        return to_return.to_cartesian();
     }
 
     pub fn get_altitude(&self) -> f64
