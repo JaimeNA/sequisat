@@ -297,6 +297,15 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     let diff_sph = get_horizontal_coordinates(&usr_sph, &sat_cart);
     
     ctx.layer();
+ 
+    let v = app.sat.get_points().iter().map(|&x| test(x)).collect::<Vec<_>>();
+
+    ctx.draw(&Points {
+        coords: &v,
+        color: Color::Green
+    });
+
+    ctx.layer();
 
     ctx.draw(&Circle {
         x: diff_sph.get_y().cos()*diff_sph.get_z().cos()*180.0,
@@ -304,6 +313,22 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
         radius: 5.0,
         color: Color::Blue,
     });
+}
+
+fn test(pos: (f64, f64)) -> (f64, f64)
+{
+
+    let lon = -58.381555 * (core::f64::consts::PI/180.0);
+    let lat = -34.603599 * (core::f64::consts::PI/180.0);
+
+    let usr_sph = Vector3::new(6378.0, lon, lat);
+
+    let aux = Vector3::new(6378.0+400.0, pos.0 * (core::f64::consts::PI/180.0), pos.1 * (core::f64::consts::PI/180.0));
+    let aux_cart = aux.to_cartesian();
+
+    let to_return = get_horizontal_coordinates(&usr_sph, &aux_cart);
+
+    (to_return.get_y().cos()*to_return.get_z().cos()*180.0, to_return.get_y().sin()*to_return.get_z().cos()*180.0)
 }
 
 fn get_horizontal_coordinates(usr_sph: &Vector3, sat_cart: &Vector3) -> Vector3
