@@ -294,41 +294,51 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     let usr_sph = Vector3::new(6378.0, lon, lat);
     let mut sat_cart = app.sat.get_ecef_position();
     
-    let diff_sph = get_horizontal_coordinates(&usr_sph, &sat_cart);
+    let p_enu = ecef_to_enu(&usr_sph, &sat_cart);
     
-    ctx.layer();
+    // ctx.layer();
  
-    let v = app.sat.get_points().iter().map(|&x| test(x)).collect::<Vec<_>>();
+    // let v = app.sat.get_points().iter().map(|&x| test(x)).collect::<Vec<_>>();
 
-    ctx.draw(&Points {
-        coords: &v,
-        color: Color::Green
-    });
+    // ctx.draw(&Points {
+    //     coords: &v,
+    //     color: Color::Green
+    // });
 
     ctx.layer();
 
     ctx.draw(&Circle {
-        x: diff_sph.get_y().cos()*diff_sph.get_z().cos()*180.0,
-        y: diff_sph.get_y().sin()*diff_sph.get_z().cos()*180.0,
+        x: p_enu.get_x() * 180.0/core::f64::consts::PI,
+        y: p_enu.get_y() * 180.0/core::f64::consts::PI,
         radius: 5.0,
         color: Color::Blue,
     });
 }
 
-fn test(pos: (f64, f64)) -> (f64, f64)
+fn ecef_to_enu(usr_sph: &Vector3, sat_cart: &Vector3) -> Vector3
 {
+    // TODO: go from geodesic to ECEF with more precise altitude(using earth eccentricity)
 
-    let lon = -58.381555 * (core::f64::consts::PI/180.0);
-    let lat = -34.603599 * (core::f64::consts::PI/180.0);
+    // All calculations taken from:
+    // https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
+    let usr_cart = usr_sph.to_cartesian();
+    let mut p = sat_cart.clone();   // TODO: Better naming 
 
-    let usr_sph = Vector3::new(6378.0, lon, lat);
+    p.sub(&usr_cart);
 
-    let aux = Vector3::new(6378.0+400.0, pos.0 * (core::f64::consts::PI/180.0), pos.1 * (core::f64::consts::PI/180.0));
-    let aux_cart = aux.to_cartesian();
+    let p_module = (p.get_x().powi(2) + p.get_y().powi(2) + p.get_z().powi(2)).sqrt();
 
-    let to_return = get_horizontal_coordinates(&usr_sph, &aux_cart);
+    let p_normalized = Vector3::new(p.get_x() / p_module, p.get_y() / p_module, p.get_z() / p_module); // TODO: implement as part of Vector3
 
-    (to_return.get_y().cos()*to_return.get_z().cos()*180.0, to_return.get_y().sin()*to_return.get_z().cos()*180.0)
+    // Apply rotation matrix
+    let delta = usr_sph.get_y();
+    let phita = usr_sph.get_z();
+
+    let p_enu = Vector3::new(p_normalized.get_x()*delta.sin() + p_normalized.get_y()*delta.cos(),
+        -p_normalized.get_x()*delta.cos()*phita.sin() - p_normalized.get_y()*delta.sin()*phita.sin() + p_normalized.get_z()*phita.cos(),
+        p_normalized.get_x()*delta.cos()*phita.cos() + p_normalized.get_y()*delta.sin()*phita.cos() + p_normalized.get_z()*phita.sin());
+
+    return p_enu.clone(); // (e, n, u)
 }
 
 fn get_horizontal_coordinates(usr_sph: &Vector3, sat_cart: &Vector3) -> Vector3
