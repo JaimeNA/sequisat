@@ -5,7 +5,7 @@ use crate::Vector3;
 use ratatui::{
     style::{Style, Color, Modifier},
     widgets::{Borders, Block, Paragraph, Tabs},
-    widgets::canvas::{Canvas, Points, Circle, MapResolution, Map, Context},
+    widgets::canvas::{Canvas, Points, Circle, Line, MapResolution, Map, Context},
     prelude::{Constraint, Rect, Direction, Layout},
     text::Span,
     symbols,
@@ -281,6 +281,8 @@ fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
 
 fn paint_azimuth(ctx: &mut Context, app: &App)
 {
+
+    // draw grid<
     ctx.draw(&Circle {
         x: 0.0,
         y: 0.0,
@@ -288,8 +290,42 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
         color: Color::Yellow,
     });
 
-    let lon = -58.381555 * (core::f64::consts::PI/180.0);
-    let lat = -34.603599 * (core::f64::consts::PI/180.0);
+    ctx.draw(&Circle {
+        x: 0.0,
+        y: 0.0,
+        radius: 45.0,
+        color: Color::Red,
+    });
+
+    ctx.draw(&Line {
+        x1: 90.0,
+        y1: 0.0,
+        x2: -90.0,
+        y2: 0.0,
+        color: Color::Red,
+    });
+
+    ctx.draw(&Line {
+        x1: 0.0,
+        y1: 90.0,
+        x2: 0.0,
+        y2: -90.0,
+        color: Color::Red,
+    });
+
+    // draw markers
+    ctx.print(0.0, -90.0, "0");
+    ctx.print(0.0, -45.0, "45");
+    ctx.print(0.0, 0.0, "90");
+
+    ctx.print(0.0, 90.0, "S");
+    ctx.print(90.0, 0.0, "E");
+    ctx.print(-90.0, 0.0, "W");
+
+
+    // Draw sat
+    let lon = -65.18277 * (core::f64::consts::PI/180.0);
+    let lat = -33.8594 * (core::f64::consts::PI/180.0);
 
     let usr_sph = Vector3::new(6378.0, lon, lat);
     let mut sat_cart = app.sat.get_ecef_position();
@@ -304,12 +340,19 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     //     coords: &v,
     //     color: Color::Green
     // });
-
     ctx.layer();
 
+    let p_spheric = Vector3::new(0.0, (p_enu.get_x()/p_enu.get_y()).atan(), p_enu.get_z().asin());
+
+
+    ctx.print(100.0, 0.0, format!("Elevation: {:.5}", p_spheric.get_z()));
+    ctx.print(100.0, -10.0, format!("Azimuth: {:.5}", p_spheric.get_y()));
+
+    let p = 90.0*(1.0 - (p_spheric.get_z()/90.0));
+
     ctx.draw(&Circle {
-        x: p_enu.get_x() * 180.0/core::f64::consts::PI,
-        y: p_enu.get_y() * 180.0/core::f64::consts::PI,
+        x: p*p_spheric.get_y().sin(),
+        y: -p*p_spheric.get_y().cos(),
         radius: 5.0,
         color: Color::Blue,
     });
@@ -357,5 +400,5 @@ fn get_horizontal_coordinates(usr_sph: &Vector3, sat_cart: &Vector3) -> Vector3
 
 fn get_user_location() -> Vector3 // Radius, Longitude and Altitude
 {
-    Vector3::new(0.0, -58.381555, -34.603599)
+    Vector3::new(0.0, -65.18277, -33.8594)
 }
