@@ -327,7 +327,7 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     let lon = -65.18277 * (core::f64::consts::PI/180.0);
     let lat = -33.8594 * (core::f64::consts::PI/180.0);
 
-    let usr_sph = Vector3::new(6378.0, lon, lat);
+    let usr_sph = Vector3::new(lat, lon, 6378.0);
     let mut sat_cart = app.sat.get_ecef_position();
     
     let p_enu = ecef_to_enu(&usr_sph, &sat_cart);
@@ -342,13 +342,15 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     // });
     ctx.layer();
 
-    let p_spheric = Vector3::new(0.0, (p_enu.get_x()/p_enu.get_y()).atan(), p_enu.get_z().asin());
+    let p_module = (p_enu.get_x().powi(2) + p_enu.get_y().powi(2) + p_enu.get_z().powi(2)).sqrt();
+    let p_enu_normalized = Vector3::new(p_enu.get_x() / p_module, p_enu.get_y() / p_module, p_enu.get_z() / p_module);
 
+    let p_spheric = Vector3::new((p_enu_normalized.get_x()/p_enu_normalized.get_y()).atan(),  p_enu_normalized.get_z().asin(), 0.0);
 
-    ctx.print(100.0, 0.0, format!("Elevation: {:.5}", p_spheric.get_z()));
-    ctx.print(100.0, -10.0, format!("Azimuth: {:.5}", p_spheric.get_y()));
+    ctx.print(100.0, 0.0, format!("Elevation: {:.5}", p_spheric.get_y()*(180.0/core::f64::consts::PI)));
+    ctx.print(100.0, -10.0, format!("Azimuth: {:.5}", p_spheric.get_x()*(180.0/core::f64::consts::PI)));
 
-    let p = 90.0*(1.0 - (p_spheric.get_z()/90.0));
+    let p = 90.0*(1.0 - (p_spheric.get_x()/90.0));
 
     ctx.draw(&Circle {
         x: p*p_spheric.get_y().sin(),
@@ -374,28 +376,14 @@ fn ecef_to_enu(usr_sph: &Vector3, sat_cart: &Vector3) -> Vector3
     let p_normalized = Vector3::new(p.get_x() / p_module, p.get_y() / p_module, p.get_z() / p_module); // TODO: implement as part of Vector3
 
     // Apply rotation matrix
-    let delta = usr_sph.get_y();
-    let phita = usr_sph.get_z();
+    let phita = usr_sph.get_x();
+    let gamma = usr_sph.get_y();
 
-    let p_enu = Vector3::new(p_normalized.get_x()*delta.sin() + p_normalized.get_y()*delta.cos(),
-        -p_normalized.get_x()*delta.cos()*phita.sin() - p_normalized.get_y()*delta.sin()*phita.sin() + p_normalized.get_z()*phita.cos(),
-        p_normalized.get_x()*delta.cos()*phita.cos() + p_normalized.get_y()*delta.sin()*phita.cos() + p_normalized.get_z()*phita.sin());
+    let p_enu = Vector3::new(p_normalized.get_x()*gamma.sin() + p_normalized.get_y()*gamma.cos(),
+        -p_normalized.get_x()*gamma.cos()*phita.sin() - p_normalized.get_y()*gamma.sin()*phita.sin() + p_normalized.get_z()*phita.cos(),
+        p_normalized.get_x()*gamma.cos()*phita.cos() + p_normalized.get_y()*gamma.sin()*phita.cos() + p_normalized.get_z()*phita.sin());
 
     return p_enu.clone(); // (e, n, u)
-}
-
-fn get_horizontal_coordinates(usr_sph: &Vector3, sat_cart: &Vector3) -> Vector3
-{
-    let usr_cart = usr_sph.to_cartesian();
-    let mut sat_cart = sat_cart.clone();
-
-    sat_cart.sub(&usr_cart);
-
-    let mut diff_sph = sat_cart.to_spheric();
-
-    diff_sph.sum(&usr_sph);
-
-    return diff_sph.clone();
 }
 
 fn get_user_location() -> Vector3 // Radius, Longitude and Altitude

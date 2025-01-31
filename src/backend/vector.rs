@@ -68,20 +68,22 @@ impl Vector3 {
     pub fn to_cartesian(&self) -> Vector3
     {
         Vector3::new(
-            self.get_x()*self.get_y().cos()*self.get_z().sin(), 
-            self.get_x()*self.get_y().sin()*self.get_z().sin(), 
-            self.get_x()*self.get_z().cos()
+            self.get_z()*self.get_x().cos()*self.get_y().cos(), 
+            self.get_z()*self.get_x().sin()*self.get_y().cos(), 
+            self.get_z()*self.get_y().sin()
         )
     }
 
-    pub fn to_spheric(&self) -> Vector3
+    pub fn to_geodetic(&self) -> Vector3
     {
-        let radius = (self.get_x().powi(2) + self.get_y().powi(2) + self.get_z().powi(2)).sqrt();
-        let longitude = self.get_y().atan2(self.get_x());
+        // https://en.wikipedia.org/wiki/Geodetic_coordinates
 
+        let p = (self.get_x().powi(2) + self.get_y().powi(2)).sqrt();
 
-        let latitude = (self.get_z() / (self.get_x().powi(2) + self.get_y().powi(2)).sqrt()).atan(); // NOTE: Spherical coordinates differ from the mathematical ones
+        let h = (self.get_x().powi(2) + self.get_y().powi(2) + self.get_z().powi(2)).sqrt();
+        let gamma = self.get_y().atan2(self.get_x());
+        let phi = (self.get_z() / p).atan(); // TODO: make another vector type just for this coords
 
-        Vector3::new(radius, longitude, latitude)
+        Vector3::new(phi, gamma, h)
     }
 }
