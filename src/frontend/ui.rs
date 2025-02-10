@@ -324,8 +324,8 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
 
 
     // Draw sat
-    let lon = -65.18277 * (core::f64::consts::PI/180.0);
-    let lat = -33.8594 * (core::f64::consts::PI/180.0);
+    let lon = -58.381555 * (core::f64::consts::PI/180.0);
+    let lat = -34.603599 * (core::f64::consts::PI/180.0);
 
     let usr_sph = Vector3::new(lat, lon, 6378.0);
     let mut sat_cart = app.sat.get_ecef_position();
@@ -388,5 +388,5 @@ fn ecef_to_enu(usr_sph: &Vector3, sat_cart: &Vector3) -> Vector3
 
 fn get_user_location() -> Vector3 // Radius, Longitude and Altitude
 {
-    Vector3::new(0.0, -65.18277, -33.8594)
+    Vector3::new(0.0, -58.381555, -34.603599)
 }
