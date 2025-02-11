@@ -96,9 +96,9 @@ impl Satellite
         return self.propagator.get_position();
     }
 
-    pub fn get_ecef_position(&self) -> Vector3 // (R, longitude, latitude)
+    pub fn get_ecef_position(&self) -> Vector3 // (longitude, latitude, altitude)
     {
-        let to_return = Vector3::new(6378.0 + self.get_altitude(), self.get_latitude(), self.get_latitude());
+        let to_return = Vector3::new(self.get_longitude(), self.get_latitude(), 6378.0 + self.get_altitude());
         return to_return.to_cartesian();
     }
 

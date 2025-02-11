@@ -84,6 +84,6 @@ impl Vector3 {
         let gamma = self.get_y().atan2(self.get_x());
         let phi = (self.get_z() / p).atan(); // TODO: make another vector type just for this coords
 
-        Vector3::new(phi, gamma, h)
+        Vector3::new(gamma, phi, h)
     }
 }
