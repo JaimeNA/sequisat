@@ -101,6 +101,32 @@ impl Vector3 {
         Vector3::new(lat, lon, h - self.prime_vertical_radius(lat))
     }
 
+    // Takes the sat vector as geodetic and using the client vector its computes the ENU coordinates
+    pub fn ecef_to_enu(client_ecef: &Vector3, satellite_ecef: &Vector3) -> Vector3
+    {
+        // https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
+        
+        let client_geodetic = client_ecef.ecef_to_geodetic();
+
+        let mut p = satellite_ecef.clone();   // TODO: Better naming 
+    
+        p.sub(&client_ecef);
+    
+        let p_module = (p.get_x().powi(2) + p.get_y().powi(2) + p.get_z().powi(2)).sqrt();
+    
+        let p_normalized = Vector3::new(p.get_x() / p_module, p.get_y() / p_module, p.get_z() / p_module); // TODO: implement as part of Vector3
+    
+        // Apply rotation matrix
+        let lat = client_geodetic.get_x();
+        let lon = client_geodetic.get_y();
+    
+        let p_enu = Vector3::new(-p_normalized.get_x()*lon.sin() + p_normalized.get_y()*lon.cos(),
+                                -p_normalized.get_x()*lon.cos()*lat.sin() - p_normalized.get_y()*lon.sin()*lat.sin() + p_normalized.get_z()*lat.cos(),
+                                p_normalized.get_x()*lon.cos()*lat.cos() + p_normalized.get_y()*lon.sin()*lat.cos() + p_normalized.get_z()*lat.sin());
+    
+        return p_enu.clone(); // (e, n, u)
+    }
+
     // Computes the prime vertical radius of curvature
     fn prime_vertical_radius(&self, latitude: f64) -> f64
     {

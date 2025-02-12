@@ -327,10 +327,13 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     let lon = -58.381555 * (core::f64::consts::PI/180.0);
     let lat = -34.603599 * (core::f64::consts::PI/180.0);
 
-    let usr_sph = Vector3::new(lat, lon, 0.0);
-    let mut sat_cart = app.sat.get_ecef_position();
+    let usr_geodetic = Vector3::new(lat, lon, 0.0);
+    let sat_geodetic = app.sat.get_geodetic_position();
+
+    let usr_ecef = usr_geodetic.geodetic_to_ecef();
+    let sat_ecef = sat_geodetic.geodetic_to_ecef();
     
-    let p_enu = ecef_to_enu(&usr_sph, &sat_cart);
+    let p_enu = Vector3::ecef_to_enu(&usr_ecef, &sat_ecef);
     
     // ctx.layer();
  
@@ -345,21 +348,11 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     let p_module = (p_enu.get_x().powi(2) + p_enu.get_y().powi(2) + p_enu.get_z().powi(2)).sqrt();
     let p_enu_normalized = Vector3::new(p_enu.get_x() / p_module, p_enu.get_y() / p_module, p_enu.get_z() / p_module);
 
-    let p_spheric = Vector3::new((p_enu_normalized.get_x()/p_enu_normalized.get_y()).atan(),  p_enu_normalized.get_z().asin(), 0.0);
+    let p_spheric = Vector3::new(p_enu.get_x().atan2(p_enu.get_y()),  p_enu.get_z().asin(), 0.0);
 
-    let az = {
-        if p_spheric.get_x() > 0.0
-        {
-            p_spheric.get_x()
-        }
-        else
-        {
-            -p_spheric.get_x()
-        }
-    };
-
+    
     ctx.print(100.0, 0.0, format!("Elevation: {:.5}", p_spheric.get_y()*(180.0/core::f64::consts::PI)));
-    ctx.print(100.0, -10.0, format!("Azimuth: {:.5}", az*(180.0/core::f64::consts::PI)));
+    ctx.print(100.0, -10.0, format!("Azimuth: {:.5}", p_spheric.get_x()*(180.0/core::f64::consts::PI)));
 
     let p = 90.0*(1.0 - (p_spheric.get_x()/90.0));
 
@@ -369,32 +362,6 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
         radius: 5.0,
         color: Color::Blue,
     });
-}
-
-fn ecef_to_enu(usr_sph: &Vector3, sat_cart: &Vector3) -> Vector3
-{
-    // TODO: go from geodesic to ECEF with more precise altitude(using earth eccentricity)
-
-    // All calculations taken from:
-    // https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
-    let usr_cart = usr_sph.geodetic_to_ecef();
-    let mut p = sat_cart.clone();   // TODO: Better naming 
-
-    p.sub(&usr_cart);
-
-    let p_module = (p.get_x().powi(2) + p.get_y().powi(2) + p.get_z().powi(2)).sqrt();
-
-    let p_normalized = Vector3::new(p.get_x() / p_module, p.get_y() / p_module, p.get_z() / p_module); // TODO: implement as part of Vector3
-
-    // Apply rotation matrix
-    let gamma = usr_sph.get_y();
-    let phita = usr_sph.get_x();
-
-    let p_enu = Vector3::new(p_normalized.get_x()*gamma.sin() + p_normalized.get_y()*gamma.cos(),
-        -p_normalized.get_x()*gamma.cos()*phita.sin() - p_normalized.get_y()*gamma.sin()*phita.sin() + p_normalized.get_z()*phita.cos(),
-        p_normalized.get_x()*gamma.cos()*phita.cos() + p_normalized.get_y()*gamma.sin()*phita.cos() + p_normalized.get_z()*phita.sin());
-
-    return p_enu.clone(); // (e, n, u)
 }
 
 fn get_user_location() -> Vector3 // Radius, Longitude and Altitude
