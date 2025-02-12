@@ -7,6 +7,9 @@ pub struct Vector3 {
 
 impl Vector3 {
 
+    const SEMI_MAYOR_AXIS: f64 = 6378.137; // Equatorial radius
+    const SEMI_MINOR_AXIS: f64 = 6356.752; // Polar radius
+
     pub fn new(x:f64, y: f64, z: f64) -> Self
     {
         Self {
@@ -64,26 +67,51 @@ impl Vector3 {
         self.z
     }
 
-
-    pub fn to_cartesian(&self) -> Vector3
+    /* 
+     * The geodetic vetor should have the followiung format: (latitude, longitude, height)
+     * while the ecef will be: (x, y, z)
+    */
+    pub fn geodetic_to_ecef(&self) -> Vector3
     {
+        // https://en.wikipedia.org/wiki/Geographic_coordinate_conversion
+        // https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
+
+        // Compute ECEF coordinates
+
+        let n = self.prime_vertical_radius(self.x);
+
         Vector3::new(
-            self.get_z()*self.get_x().cos()*self.get_y().cos(), 
-            self.get_z()*self.get_x().sin()*self.get_y().cos(), 
-            self.get_z()*self.get_y().sin()
+            (self.get_z() + n)*self.get_y().cos()*self.get_x().cos(), 
+            (self.get_z() + n)*self.get_y().sin()*self.get_x().cos(), 
+            (self.get_z() + n)*self.get_x().sin()
         )
     }
 
-    pub fn to_geodetic(&self) -> Vector3
+    pub fn ecef_to_geodetic(&self) -> Vector3
     {
         // https://en.wikipedia.org/wiki/Geodetic_coordinates
 
         let p = (self.get_x().powi(2) + self.get_y().powi(2)).sqrt();
 
-        let h = (self.get_x().powi(2) + self.get_y().powi(2) + self.get_z().powi(2)).sqrt();
-        let gamma = self.get_y().atan2(self.get_x());
-        let phi = (self.get_z() / p).atan(); // TODO: make another vector type just for this coords
+        let lon = self.get_y().atan2(self.get_x());
+        let lat = (self.get_z() / p).atan();
 
-        Vector3::new(gamma, phi, h)
+        let h = p / lat.cos();
+        
+        Vector3::new(lat, lon, h - self.prime_vertical_radius(lat))
+    }
+
+    // Computes the prime vertical radius of curvature
+    fn prime_vertical_radius(&self, latitude: f64) -> f64
+    {
+        let a = Self::SEMI_MAYOR_AXIS;
+        let b = Self::SEMI_MINOR_AXIS;
+
+        let e_squared = 1.0 - (b*b)/(a*a);
+
+        let temp_1 = (latitude.sin()).powi(2);
+        let temp_2 = (1.0 - e_squared*temp_1).sqrt();
+
+        a / temp_2
     }
 }

@@ -98,8 +98,8 @@ impl Satellite
 
     pub fn get_ecef_position(&self) -> Vector3 // (longitude, latitude, altitude)
     {
-        let to_return = Vector3::new(self.get_longitude(), self.get_latitude(), 6378.0 + self.get_altitude());
-        return to_return.to_cartesian();
+        let to_return = Vector3::new(self.get_latitude(), self.get_longitude(), self.get_altitude());
+        return to_return.geodetic_to_ecef();
     }
 
     pub fn get_altitude(&self) -> f64
