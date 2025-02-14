@@ -97,10 +97,7 @@ pub struct SGP4
     d2:     f64,
     d3:     f64,
     d4:     f64,
-    position: Vector3, 
-    lat: f64,
-    lon: f64,
-    alt: f64
+    position_eci: Vector3, 
 }
 
 impl SGP4
@@ -122,10 +119,7 @@ impl SGP4
             d2:     0.0,
             d3:     0.0,
             d4:     0.0,
-            position: Vector3::new(0.0, 0.0, 0.0), 
-            alt: 0.0,
-            lon: 0.0,
-            lat: 0.0
+            position_eci: Vector3::new(0.0, 0.0, 0.0)
         }
     }
 
@@ -317,41 +311,13 @@ impl SGP4
         let ry = rk * uy;
         let rz = rk * uz;
 
-        self.position.set_x(rx); // Note: Altitude is in scale of ER, so 1.0 = ER
-        self.position.set_y(ry);
-        self.position.set_z(rz);
-
-        // TODO: Implement with vector and fix altitude
-
-        let radius = (rx*rx + ry*ry + rz*rz).sqrt();
-        let longitude = ry.atan2(rx);
-
-
-        let latitude = (rz / (rx*rx + ry*ry).sqrt()).atan();
-
-        self.alt = (radius - 1.0) * ER;
-        self.lat = latitude;
-        self.lon = longitude;
+        self.position_eci.set_x(rx); // Note: Altitude is in scale of ER, so 1.0 = ER
+        self.position_eci.set_y(ry);
+        self.position_eci.set_z(rz);
     }
 
-    pub fn get_position(&self) -> &Vector3
+    pub fn get_position_eci(&self) -> &Vector3
     {
-        &self.position
+        &self.position_eci
     }
-
-    pub fn get_altitude(&self) -> f64
-    {
-        return self.alt;
-    }
-
-    pub fn get_latitude(&self) -> f64
-    {
-        return self.lat;
-    }
-
-    pub fn get_longitude(&self) -> f64
-    {
-        return self.lon;
-    }
-
 }

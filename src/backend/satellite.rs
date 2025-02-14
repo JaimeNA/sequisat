@@ -93,27 +93,33 @@ impl Satellite
 
     pub fn get_eci_position(&self) -> &Vector3
     {
-        return self.propagator.get_position();
+        return self.propagator.get_position_eci();
     }
 
-    pub fn get_geodetic_position(&self) -> Vector3 // (longitude, latitude, altitude)
+    pub fn get_geodetic_position(&self) -> Vector3 // (latitude, longitude, altitude)
     {
-        Vector3::new(self.get_latitude(), self.get_longitude(), self.get_altitude())
+        let mut pos_geodetic = self.propagator.get_position_eci().ecef_to_geodetic();
+
+        // Convert to real geodetic(ecef)
+        pos_geodetic.set_y((pos_geodetic.get_y() - self.gst + core::f64::consts::PI).rem_euclid(2.0*core::f64::consts::PI) - core::f64::consts::PI);
+
+        // TODO: Look for better way to do this
+        pos_geodetic.clone()
     }
 
     pub fn get_altitude(&self) -> f64
     {
-        return self.propagator.get_altitude();
+        return self.get_geodetic_position().get_z();
     }
 
     pub fn get_latitude(&self) -> f64
     {
-        return self.propagator.get_latitude();
+        return self.get_geodetic_position().get_x();
     }
 
     pub fn get_longitude(&self) -> f64
     {
-        return (self.propagator.get_longitude() - self.gst + core::f64::consts::PI).rem_euclid(2.0*core::f64::consts::PI) - core::f64::consts::PI; // Normalize to range
+        return self.get_geodetic_position().get_y();
     }
 
     pub fn get_tle(&self) -> &TLE
