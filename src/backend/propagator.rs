@@ -71,7 +71,7 @@ pub struct Constants {
 
 const KE: f64 = 0.07436685316871385;
 const S: f64 = 1.0122292763545218;
-const ER: f64 = 6378.0;
+const ER: f64 = 6371.0;
 const Q0MS2T: f64 = 0.00000000188027916;
 const J2: f64 = 0.00108262998905;     // Second Gravitational Zonal Harmonic of the Earth
 const J3: f64 = -0.00000253215306;   // Third Gravitational Zonal Harmonic of the Earth
@@ -311,9 +311,9 @@ impl SGP4
         let ry = rk * uy;
         let rz = rk * uz;
 
-        self.position_eci.set_x(rx); // Note: Altitude is in scale of ER, so 1.0 = ER
-        self.position_eci.set_y(ry);
-        self.position_eci.set_z(rz);
+        self.position_eci.set_x(rx*ER); // In scale of ER, so 1.0 = ER
+        self.position_eci.set_y(ry*ER);
+        self.position_eci.set_z(rz*ER);
     }
 
     pub fn get_position_eci(&self) -> &Vector3

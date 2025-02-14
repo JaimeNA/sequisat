@@ -14,15 +14,6 @@ use ratatui::{
 };
 
 const DARK_BLUE: Color = Color::Rgb(16, 24, 48);
-const LIGHT_BLUE: Color = Color::Rgb(64, 96, 192);
-const LIGHT_YELLOW: Color = Color::Rgb(192, 192, 96);
-const LIGHT_GREEN: Color = Color::Rgb(64, 192, 96);
-const LIGHT_RED: Color = Color::Rgb(192, 96, 96);
-const RED: Color = Color::Rgb(215, 0, 0);
-const BLACK: Color = Color::Rgb(8, 8, 8); // not really black, often #080808
-const DARK_GRAY: Color = Color::Rgb(68, 68, 68);
-const MID_GRAY: Color = Color::Rgb(128, 128, 128);
-const LIGHT_GRAY: Color = Color::Rgb(188, 188, 188);
 const WHITE: Color = Color::Rgb(238, 238, 238); // not really white, often #eeeeee
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -145,8 +136,8 @@ fn draw_azimuth_tab(frame: &mut Frame, app: &mut App, area: Rect)
      ctx.layer();    // Go one layer above
                      //
      ctx.draw(&Circle {
-         x: (app.sat.get_longitude()* 180.0/3.14159),
-         y: (app.sat.get_latitude()* 180.0/3.14159),
+         x: (app.sat.get_geodetic_position().get_y()* 180.0/3.14159),
+         y: (app.sat.get_geodetic_position().get_x()* 180.0/3.14159),
          radius: 5.0,
          color: Color::Yellow,
      });
@@ -186,15 +177,15 @@ fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
      let text = vec![
          text::Line::from(vec![
              Span::from("Altitude: "),
-             Span::styled(format!("{:.5} km", app.sat.get_altitude().to_string()), Style::default().fg(Color::Red)),
+             Span::styled(format!("{:.5} km", app.sat.get_geodetic_position().get_z().to_string()), Style::default().fg(Color::Red)),
          ]),
          text::Line::from(vec![
              Span::from("Longitude: "),
-             Span::styled(format!("{:.5} deg", (app.sat.get_longitude() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
+             Span::styled(format!("{:.5} deg", (app.sat.get_geodetic_position().get_y() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
          ]),
          text::Line::from(vec![
              Span::from("Latitude: "),
-             Span::styled(format!("{:.5} deg", (app.sat.get_latitude() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
+             Span::styled(format!("{:.5} deg", (app.sat.get_geodetic_position().get_x() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
          ])
      ];
  

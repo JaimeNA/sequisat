@@ -65,7 +65,7 @@ impl Satellite
         {
             self.gst = self.get_gst(Self::get_julian_day() + (i as f64 / (60.0*24.0)));
             self.propagator.propagate(self.time_since_epoch_in_minutes() + i as f64);
-            self.points.push((self.get_longitude() * (180.0/core::f64::consts::PI), self.get_latitude() * (180.0/core::f64::consts::PI)));
+            self.points.push((self.get_geodetic_position().get_y() * (180.0/core::f64::consts::PI), self.get_geodetic_position().get_x() * (180.0/core::f64::consts::PI)));
         }
     }
 
@@ -105,21 +105,6 @@ impl Satellite
 
         // TODO: Look for better way to do this
         pos_geodetic.clone()
-    }
-
-    pub fn get_altitude(&self) -> f64
-    {
-        return self.get_geodetic_position().get_z();
-    }
-
-    pub fn get_latitude(&self) -> f64
-    {
-        return self.get_geodetic_position().get_x();
-    }
-
-    pub fn get_longitude(&self) -> f64
-    {
-        return self.get_geodetic_position().get_y();
     }
 
     pub fn get_tle(&self) -> &TLE
