@@ -340,16 +340,15 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     let p_enu_normalized = Vector3::new(p_enu.get_x() / p_module, p_enu.get_y() / p_module, p_enu.get_z() / p_module);
 
     let p_spheric = Vector3::new(p_enu.get_x().atan2(p_enu.get_y()),  p_enu.get_z().asin(), 0.0);
-
     
     ctx.print(100.0, 0.0, format!("Elevation: {:.5}", p_spheric.get_y()*(180.0/core::f64::consts::PI)));
     ctx.print(100.0, -10.0, format!("Azimuth: {:.5}", p_spheric.get_x()*(180.0/core::f64::consts::PI)));
 
-    let p = 90.0*(1.0 - (p_spheric.get_x()/90.0));
+    let p = 90.0 - (p_spheric.get_y()*(180.0/core::f64::consts::PI));
 
     ctx.draw(&Circle {
-        x: p*p_spheric.get_y().sin(),
-        y: -p*p_spheric.get_y().cos(),
+        x: -p*p_spheric.get_x().cos(),
+        y: p*p_spheric.get_x().sin(),
         radius: 5.0,
         color: Color::Blue,
     });
