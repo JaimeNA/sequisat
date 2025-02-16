@@ -310,8 +310,8 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     ctx.print(0.0, 0.0, "90");
 
     ctx.print(0.0, 90.0, "N");
-    ctx.print(90.0, 0.0, "E");
-    ctx.print(-90.0, 0.0, "W");
+    ctx.print(90.0, 0.0, "W");
+    ctx.print(-90.0, 0.0, "E");
 
 
     // Draw sat
@@ -347,8 +347,8 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     let p = 90.0 - (p_spheric.get_y()*(180.0/core::f64::consts::PI));
 
     ctx.draw(&Circle {
-        x: -p*p_spheric.get_x().cos(),
-        y: p*p_spheric.get_x().sin(),
+        x: -p*p_spheric.get_x().sin(),
+        y: p*p_spheric.get_x().cos(),
         radius: 5.0,
         color: Color::Blue,
     });
