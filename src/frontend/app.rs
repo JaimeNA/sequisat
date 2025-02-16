@@ -1,5 +1,7 @@
 use crate::Satellite;
 
+use crate::Vector3;
+
 use ratatui::widgets::ListState;
 
 pub struct TabsState<'a> {
@@ -29,15 +31,26 @@ pub struct App<'a> {
     pub sat: Satellite,
     pub tabs: TabsState<'a>,
     pub should_quit: bool,
+    pub usr_geodetic: Vector3,
+    pub input_mode: bool,
+    pub buffer: String,
 }   
 
 impl<'a> App<'a> {
+
+    const DEF_LAT: f64 = -34.603599 * (core::f64::consts::PI/180.0);
+    const DEF_LON: f64 = -58.381555 * (core::f64::consts::PI/180.0); // Buenos Aires, Argentina
+
+
     pub fn new(title: &'a str, sat: Satellite) -> Self{
         Self {
             title,
             sat,
             tabs: TabsState::new(vec!["Map Projection", "Azimuthal Projection", "About"]),
             should_quit: false,
+            usr_geodetic: Vector3::new(Self::DEF_LAT, Self::DEF_LON, 0.0),
+            input_mode: false,
+            buffer: String::new()
         }
     }
 
@@ -62,7 +75,7 @@ impl<'a> App<'a> {
             'q' => {
                 self.should_quit = true;
             }
-            _ => {}
+            _ => {self.buffer.push(c)} // EXPERIMENTAL
         }
     }
 

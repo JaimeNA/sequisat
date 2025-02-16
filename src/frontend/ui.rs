@@ -13,6 +13,8 @@ use ratatui::{
     Frame
 };
 
+const USAGE: &str = "c - Set Latitude and Altitude | q - Quit | m - Change propagation model";
+
 const DARK_BLUE: Color = Color::Rgb(16, 24, 48);
 const WHITE: Color = Color::Rgb(238, 238, 238); // not really white, often #eeeeee
 
@@ -29,7 +31,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     match app.tabs.index {
         0 => draw_map_tab(frame, app, tab),
         1 => draw_azimuth_tab(frame, app, tab),
-        2 => draw_tle_data(frame, app, tab),
+        2 => draw_about_tab(frame, app, tab),
         _ => {}
     };
 }
@@ -99,6 +101,16 @@ fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
 fn draw_azimuth_tab(frame: &mut Frame, app: &mut App, area: Rect)
 {
 
+    let chunks = Layout::default()
+         .direction(Direction::Horizontal)
+         .constraints(
+             [
+                 Constraint::Percentage(80),
+                 Constraint::Percentage(20)
+             ].as_ref()
+         )
+         .split(area);
+
     let map = Canvas::default()
     .block(Block::default().title("Azimuth").borders(Borders::ALL))
     .paint(|ctx| paint_azimuth(ctx, app))
@@ -106,7 +118,55 @@ fn draw_azimuth_tab(frame: &mut Frame, app: &mut App, area: Rect)
     .x_bounds([-180.0, 180.0])
     .y_bounds([-180.0, 180.0]);
 
-    frame.render_widget(map, area);    
+    // Input box
+    let input_box = Paragraph::new(app.buffer.clone())
+    .block(Block::default().title("Input").borders(Borders::ALL))
+    .style(Style::default().fg(Color::White));
+
+    frame.render_widget(map, chunks[0]);    
+    frame.render_widget(input_box, chunks[1]);    
+    }
+
+
+fn draw_about_tab(frame: &mut Frame, app: &mut App, area: Rect)
+{
+    let chunks = Layout::default()
+         .direction(Direction::Vertical)
+         .constraints(
+             [
+                 Constraint::Percentage(85),
+                 Constraint::Percentage(5)
+             ].as_ref()
+         )
+         .split(area);
+ 
+    let chunklin = Layout::default()
+         .direction(Direction::Horizontal)
+         .constraints(
+             [
+                 Constraint::Percentage(50),
+                 Constraint::Percentage(50)
+             ].as_ref()
+         )
+         .split(chunks[0]);
+
+    draw_tle_data(frame, app, chunklin[0]);
+    draw_user_coords(frame, app, chunklin[1]);
+
+    let text = vec![
+        text::Line::from(vec![
+            Span::styled("Usage: ", Style::default().fg(Color::Green)),
+            Span::styled(USAGE, Style::default().fg(Color::Gray)),
+        ]),
+        text::Line::from(vec![
+            Span::styled("By Jaime Nazar Anchorena - 2025", Style::default().fg(Color::Yellow)),
+        ]),
+    ];
+
+    let usage = Paragraph::new(text)
+        .centered();
+
+    frame.render_widget(usage, chunks[1]);
 }
 
  fn paint_map(ctx: &mut Context, app: &App)
@@ -120,8 +180,8 @@ fn draw_azimuth_tab(frame: &mut Frame, app: &mut App, area: Rect)
      ctx.layer();    
      
      ctx.draw(&Circle {
-         x: get_user_location().get_y(),
-         y: get_user_location().get_z(),
+         x: app.usr_geodetic.get_y() * (180.0/core::f64::consts::PI),
+         y: app.usr_geodetic.get_x() * (180.0/core::f64::consts::PI),
          radius: 1.0,
          color: Color::Red,
      });
@@ -153,11 +213,11 @@ fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
     let text = vec![
         text::Line::from(vec![
             Span::from("Longitude: "),
-            Span::styled(format!("{:.5} deg", get_user_location().get_y().to_string()), Style::default().fg(Color::Green)),
+            Span::styled(format!("{:.5} deg",(app.usr_geodetic.get_y() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
         ]),
         text::Line::from(vec![
             Span::from("Latitude: "),
-            Span::styled(format!("{:.5} deg", get_user_location().get_z().to_string()), Style::default().fg(Color::Blue)),
+            Span::styled(format!("{:.5} deg", (app.usr_geodetic.get_x() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
         ])
     ];
 
@@ -315,13 +375,9 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
 
 
     // Draw sat
-    let lon = -58.381555 * (core::f64::consts::PI/180.0);
-    let lat = -34.603599 * (core::f64::consts::PI/180.0);
-
-    let usr_geodetic = Vector3::new(lat, lon, 0.0);
     let sat_geodetic = app.sat.get_geodetic_position();
 
-    let usr_ecef = usr_geodetic.geodetic_to_ecef();
+    let usr_ecef = app.usr_geodetic.geodetic_to_ecef();
     let sat_ecef = sat_geodetic.geodetic_to_ecef();
     
     let p_enu = Vector3::ecef_to_enu(&usr_ecef, &sat_ecef);
@@ -352,9 +408,4 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
         radius: 5.0,
         color: Color::Blue,
     });
-}
-
-fn get_user_location() -> Vector3 // Radius, Longitude and Altitude
-{
-    Vector3::new(0.0, -58.381555, -34.603599)
 }
