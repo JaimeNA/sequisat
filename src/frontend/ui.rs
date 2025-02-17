@@ -13,7 +13,7 @@ use ratatui::{
     Frame
 };
 
-const USAGE: &str = "c - Set Latitude and Altitude | q - Quit | m - Change propagation model";
+const USAGE: &str = "a - Set Latitude | o - Set user Latitude | u - Set user Altitude | q - Quit";
 
 const DARK_BLUE: Color = Color::Rgb(16, 24, 48);
 const WHITE: Color = Color::Rgb(238, 238, 238); // not really white, often #eeeeee
@@ -34,6 +34,22 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         2 => draw_about_tab(frame, app, tab),
         _ => {}
     };
+
+    if app.input_mode {
+
+        let area = Rect::new(30, 30, 7, 7); // TODO: change
+
+        let position_data = Block::default()
+        .title("Set user coordinates: 'lat lon alt'")
+        .borders(Borders::ALL);
+    
+        let data = Paragraph::new(app.buffer.clone())
+            .block(position_data)
+            .style(Style::default().fg(Color::White));
+    
+        frame.render_widget(data, area);   
+    }
+
 }
 
 fn draw_title_bar(frame: &mut Frame, app: &mut App, area: Rect)
@@ -205,7 +221,6 @@ fn draw_about_tab(frame: &mut Frame, app: &mut App, area: Rect)
  
 fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
 {
-
     let position_data = Block::default()
     .title("User Coordinates")
     .borders(Borders::ALL);

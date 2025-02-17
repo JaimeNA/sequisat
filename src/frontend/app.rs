@@ -2,7 +2,10 @@ use crate::Satellite;
 
 use crate::Vector3;
 
-use ratatui::widgets::ListState;
+use ratatui::{
+    widgets::ListState,
+    crossterm::event::KeyCode
+};
 
 pub struct TabsState<'a> {
     pub titles: Vec<&'a str>,
@@ -70,13 +73,34 @@ impl<'a> App<'a> {
         self.tabs.previous();
     }
 
-    pub fn on_key(&mut self, c: char) {
+    pub fn on_key_normal(&mut self, c: KeyCode) {
         match c {
-            'q' => {
+            KeyCode::Char('q') => {
                 self.should_quit = true;
-            }
-            _ => {self.buffer.push(c)} // EXPERIMENTAL
+            },
+            KeyCode::Char('c') => {
+                self.input_mode = true;
+            },
+            _ => {}
         }
+    }
+
+    pub fn on_key_input(&mut self, c: KeyCode) {
+        match c {
+            KeyCode::Enter => {
+                self.set_user_coordinates();
+            },
+            KeyCode::Char(c) => self.buffer.push(c),
+            _ => {}
+        }
+    }
+
+    pub fn set_user_coordinates(&mut self) {
+        let mut columns = self.buffer.split_whitespace();
+
+        println!("{}",  columns.next().unwrap());
+
+        self.input_mode = false;
     }
 
     pub fn on_tick(&mut self) {

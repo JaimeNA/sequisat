@@ -46,13 +46,13 @@ fn run_app<B: Backend>(
         if event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Left | KeyCode::Char('h') => app.on_left(),
-                        KeyCode::Up | KeyCode::Char('k') => app.on_up(),
-                        KeyCode::Right | KeyCode::Char('l') => app.on_right(),
-                        KeyCode::Down | KeyCode::Char('j') => app.on_down(),
-                        KeyCode::Char(c) => app.on_key(c),
-                        _ => {}
+                    match (app.input_mode, key.code) {
+                        (false, KeyCode::Left | KeyCode::Char('h')) => app.on_left(),
+                        (false, KeyCode::Up | KeyCode::Char('k')) => app.on_up(),
+                        (false, KeyCode::Right | KeyCode::Char('l')) => app.on_right(),
+                        (false, KeyCode::Down | KeyCode::Char('j')) => app.on_down(),
+                        (false, _) => app.on_key_normal(key.code),
+                        (true, _) => app.on_key_input(key.code)
                     }
                 }
             }
