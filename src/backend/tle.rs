@@ -108,7 +108,7 @@ impl TLE
 
         // Epoch Day of Year
         let day_str = &current_column[2..];
-        let epoch_day = day_str.parse::<f64>().unwrap();
+        let epoch_day = day_str.parse::<f64>().unwrap(); // TODO: Error handling
 
         // Ballistic Coefficient
         current_column = columns.next().unwrap();

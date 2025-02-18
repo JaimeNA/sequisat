@@ -98,9 +98,24 @@ impl<'a> App<'a> {
     pub fn set_user_coordinates(&mut self) {
         let mut columns = self.buffer.split_whitespace();
 
-        println!("{}",  columns.next().unwrap());
+        let mut input = columns.next();
+
+        let mut to_return: Vec<f64> = Vec::new();
+
+        for i in 0..3 {
+            if input.is_none()
+            {    return;   } // TODO: Error handling
+            
+            let value = input.unwrap().parse::<f64>();
+            to_return.push(value.unwrap() * (core::f64::consts::PI/180.0)); // TODO: Error handling
+
+            input = columns.next();
+        }
+
+        self.usr_geodetic = Vector3::new(to_return[0], to_return[1], to_return[2]);
 
         self.input_mode = false;
+        self.buffer.clear();
     }
 
     pub fn on_tick(&mut self) {

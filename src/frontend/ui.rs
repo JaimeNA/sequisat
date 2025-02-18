@@ -4,7 +4,7 @@ use crate::Vector3;
 
 use ratatui::{
     style::{Style, Color, Modifier},
-    widgets::{Borders, Block, Paragraph, Tabs},
+    widgets::{Borders, Block, Paragraph, Tabs, Clear},
     widgets::canvas::{Canvas, Points, Circle, Line, MapResolution, Map, Context},
     prelude::{Constraint, Rect, Direction, Layout},
     text::Span,
@@ -13,7 +13,10 @@ use ratatui::{
     Frame
 };
 
-const USAGE: &str = "a - Set Latitude | o - Set user Latitude | u - Set user Altitude | q - Quit";
+const USAGE: &str = "c - Set user Coordinates | q - Quit";
+
+const POPUP_WIDTH: u16 = 40;
+const POPUP_HEIGHT: u16 = 3;
 
 const DARK_BLUE: Color = Color::Rgb(16, 24, 48);
 const WHITE: Color = Color::Rgb(238, 238, 238); // not really white, often #eeeeee
@@ -37,7 +40,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     if app.input_mode {
 
-        let area = Rect::new(30, 30, 7, 7); // TODO: change
+        let x = (frame.area().width - POPUP_WIDTH) / 2;
+        let y = (frame.area().height - POPUP_HEIGHT) / 2;
+
+        let area = Rect::new(x, y, POPUP_WIDTH, POPUP_HEIGHT).clamp(frame.area()); // Clamps rect inside the frame
 
         let position_data = Block::default()
         .title("Set user coordinates: 'lat lon alt'")
@@ -46,7 +52,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         let data = Paragraph::new(app.buffer.clone())
             .block(position_data)
             .style(Style::default().fg(Color::White));
-    
+
+        frame.render_widget(Clear, area);
         frame.render_widget(data, area);   
     }
 
