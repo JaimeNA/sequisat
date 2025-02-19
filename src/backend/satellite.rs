@@ -1,7 +1,7 @@
 
 use super::orbit::Orbit;
 use super::tle::TLE;
-use super::propagator::SGP4;
+use super::propagator::Propagator;
 use super::vector::Vector3;
 
 use chrono::{Utc, TimeZone, NaiveDate, NaiveTime, Timelike};
@@ -9,7 +9,7 @@ use julian::Calendar;
 
 pub struct Satellite 
 {
-    propagator: SGP4,
+    propagator: Propagator,
     tle: TLE,
     points: Vec<(f64, f64)>,
     gst: f64
@@ -17,11 +17,11 @@ pub struct Satellite
 
 impl Satellite
 {
-    pub fn new(tle_path: &str) -> Self
+    pub fn new(tle_path: &str, propagator: Propagator) -> Self
     {
         let tle = TLE::new(tle_path);
         let orbit = Orbit::new(&tle);
-        let mut propagator = SGP4::new(orbit);
+        let mut propagator = Propagator::new(orbit);
 
         propagator.calculate_constants();
 
@@ -98,7 +98,7 @@ impl Satellite
 
     pub fn get_geodetic_position(&self) -> Vector3 // (latitude, longitude, altitude)
     {
-        let mut pos_geodetic = self.propagator.get_position_eci().ecef_to_geodetic();
+        let mut pos_geodetic = self.propagator.model.get_position_eci().ecef_to_geodetic();
 
         // Convert to real geodetic(ecef)
         pos_geodetic.set_y((pos_geodetic.get_y() - self.gst + core::f64::consts::PI).rem_euclid(2.0*core::f64::consts::PI) - core::f64::consts::PI);

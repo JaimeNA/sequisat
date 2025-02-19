@@ -100,19 +100,38 @@ impl<'a> App<'a> {
 
         let mut input = columns.next();
 
-        let mut to_return: Vec<f64> = Vec::new();
+        // Get latitude
+        if input.is_none()
+        {    return;   } // TODO: Error handling
+        let mut value = input.unwrap().parse::<f64>();
 
-        for i in 0..3 {
-            if input.is_none()
-            {    return;   } // TODO: Error handling
-            
-            let value = input.unwrap().parse::<f64>();
-            to_return.push(value.unwrap() * (core::f64::consts::PI/180.0)); // TODO: Error handling
+        if value.is_err()
+        {    return;   } // TODO: Error handling
+        let lat = value.unwrap() * (core::f64::consts::PI/180.0);
 
-            input = columns.next();
-        }
+        input = columns.next();
 
-        self.usr_geodetic = Vector3::new(to_return[0], to_return[1], to_return[2]);
+        // Get longitude
+        if input.is_none()
+        {    return;   } // TODO: Error handling
+        value = input.unwrap().parse::<f64>();
+
+        if value.is_err()
+        {    return;   } // TODO: Error handling
+        let lon = value.unwrap() * (core::f64::consts::PI/180.0);
+        
+        input = columns.next();
+
+        // Get altitude
+        if input.is_none()
+        {    return;   } // TODO: Error handling
+        value = input.unwrap().parse::<f64>();
+
+        if value.is_err()
+        {    return;   } // TODO: Error handling
+        let alt = value.unwrap();
+
+        self.usr_geodetic = Vector3::new(lat, lon, alt);
 
         self.input_mode = false;
         self.buffer.clear();

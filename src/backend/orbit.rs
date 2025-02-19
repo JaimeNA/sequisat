@@ -1,5 +1,7 @@
 use super::tle::TLE;
 
+// Cow is fot data that is often read but occasionally mutated.
+// TODO: implement Cow Cow<'static, f64>
 pub struct Orbit {
     /// B star
     pub drag_term: f64,

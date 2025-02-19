@@ -15,7 +15,7 @@ use ratatui::{
 
 const USAGE: &str = "c - Set user Coordinates | q - Quit";
 
-const POPUP_WIDTH: u16 = 40;
+const POPUP_WIDTH: u16 = 50;
 const POPUP_HEIGHT: u16 = 3;
 
 const DARK_BLUE: Color = Color::Rgb(16, 24, 48);
@@ -46,7 +46,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         let area = Rect::new(x, y, POPUP_WIDTH, POPUP_HEIGHT).clamp(frame.area()); // Clamps rect inside the frame
 
         let position_data = Block::default()
-        .title("Set user coordinates: 'lat lon alt'")
+        .title("Set user coordinates: 'lat(deg) lon(deg) alt(km)'")
         .borders(Borders::ALL);
     
         let data = Paragraph::new(app.buffer.clone())
@@ -234,12 +234,16 @@ fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
 
     let text = vec![
         text::Line::from(vec![
+            Span::from("Latitude: "),
+            Span::styled(format!("{:.5} deg", (app.usr_geodetic.get_x() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
+        ]),
+        text::Line::from(vec![
             Span::from("Longitude: "),
             Span::styled(format!("{:.5} deg",(app.usr_geodetic.get_y() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
         ]),
         text::Line::from(vec![
-            Span::from("Latitude: "),
-            Span::styled(format!("{:.5} deg", (app.usr_geodetic.get_x() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
+            Span::from("Altitude: "),
+            Span::styled(format!("{:.5} km", app.usr_geodetic.get_z().to_string()), Style::default().fg(Color::Red)),
         ])
     ];
 

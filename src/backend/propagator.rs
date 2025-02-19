@@ -18,56 +18,27 @@ pub enum HighAltitude {
     // },
 }
 
-pub enum Method {
-    NearEarth {
-        a0: f64,
-        k2: f64,
-        k3: f64,
-        k4: f64,
-        k5: f64,
-        k6: f64,
-        high_altitude: HighAltitude,
-    },
-    // DeepSpace {
-    //     eccentricity_dot: f64,
-    //     inclination_dot: f64,
-    //     solar_perturbations: third_body::Perturbations,
-    //     lunar_perturbations: third_body::Perturbations,
-    //     resonant: Resonant,
-    // },
-}
-pub struct Geopotential {
-    /// Equatorial radius of the earth in km
-    // aₑ
-    pub ae: f64,
-
-    /// square root of earth's gravitational parameter in earth radii³ min⁻²
-    // kₑ
-    pub ke: f64,
-
-    /// un-normalised second zonal harmonic
-    // J₂
-    pub j2: f64,
-
-    /// un-normalised third zonal harmonic
-    // J₃
-    pub j3: f64,
-
-    /// un-normalised fourth zonal harmonic
-    // J₄
-    pub j4: f64,
+pub enum Model {
+    NearEarth(SGP4),
+    DeepSpace(SDP4)
 }
 
-pub struct Constants {
-    pub geopotential: Geopotential,
-    pub right_ascension_dot: f64,
-    pub argument_of_perigee_dot: f64,
-    pub mean_anomaly_dot: f64,
-    pub k2:         f64,
-    pub k4:         f64,
-    pub method:     Method,
-    pub orbit_0:    Orbit,
+pub trait Propagate {
+    fn propagate(&self, delta_time: f64) -> Vector3;
 }
+
+pub struct Propagator 
+{
+    pub model: Box<dyn Propagate>,
+    pub orbit_0: Orbit,
+}
+
+impl Propagator {
+    pub fn propagate(&self, delta_time: f64) {
+        self.model.propagate(delta_time);
+    }
+}
+
 
 const KE: f64 = 0.07436685316871385;
 const S: f64 = 1.0122292763545218;
@@ -81,8 +52,7 @@ const K2: f64 = 0.5*J2*AE*AE;
 const K4: f64 = (-3.0/8.0)*J4*AE*AE*AE*AE;
 const A30: f64 = -J3*AE*AE*AE;
 
-pub struct SGP4
-{
+pub struct SGP4 {
     pub orbit_0: Orbit,
     semimayor_axis:    f64,
     phita:  f64,
@@ -100,8 +70,18 @@ pub struct SGP4
     position_eci: Vector3, 
 }
 
-impl SGP4
-{
+pub struct SDP4 {
+    eccentricity_dot: f64,
+    inclination_dot: f64,
+}
+
+impl Propagate for SGP4 {
+    fn propagate(&self, delta_time: f64){
+        self.propagate_test(delta_time); // TODO: better naming
+    }
+}
+
+impl SGP4 {
     pub fn new(orbit_0 :Orbit) -> Self
     {
         SGP4 {
@@ -194,7 +174,7 @@ impl SGP4
     }
 
     // Note: this provides the coordinates in TEME, meaning that it doesnt have an earth-fixed frame, that would be the ECEF
-    pub fn propagate(&mut self, delta_time: f64)
+    pub fn propagate_test(&mut self, delta_time: f64)
     {
         let mdf = self.orbit_0.mean_anomaly + (1.0 + (3.0*K2 * (-1.0+3.0*self.phita*self.phita))/(2.0*self.semimayor_axis*self.semimayor_axis*self.beta0.powi(3))
             + (3.0*K2*K2 * (13.0 - 78.0*self.phita*self.phita + 137.0*self.phita.powi(4)))/(16.0*self.semimayor_axis.powi(4)*self.beta0.powi(7)))
@@ -235,7 +215,7 @@ impl SGP4
 
         //Add the long-period periodic terms
 
-        let axn = e*w.cos();
+        let axn = e*w.cos(); // TODO: change value depending on the perigee (see spacetrk.pdf)
 
         let ill = ((A30*self.orbit_0.inclination.sin()) / (8.0*K2*a*b*b)) * axn
             * ((3.0+5.0*self.phita) / (1.0+self.phita));
