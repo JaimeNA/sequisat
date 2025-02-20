@@ -149,6 +149,4 @@ impl Satellite
 
         delta
     }
-
-    //TODO: Work with vectors!
 }

@@ -141,14 +141,10 @@ fn draw_azimuth_tab(frame: &mut Frame, app: &mut App, area: Rect)
     .x_bounds([-180.0, 180.0])
     .y_bounds([-180.0, 180.0]);
 
-    // Input box
-    let input_box = Paragraph::new(app.buffer.clone())
-    .block(Block::default().title("Input").borders(Borders::ALL))
-    .style(Style::default().fg(Color::White));
-
     frame.render_widget(map, chunks[0]);    
-    frame.render_widget(input_box, chunks[1]);    
-    }
+
+    draw_stereographic_coords(frame, app, chunks[1]);   
+}
 
 
 fn draw_about_tab(frame: &mut Frame, app: &mut App, area: Rect)
@@ -225,7 +221,31 @@ fn draw_about_tab(frame: &mut Frame, app: &mut App, area: Rect)
          color: Color::Yellow,
      });
  }
- 
+
+fn draw_stereographic_coords(frame: &mut Frame, app: &mut App, area: Rect)
+{
+    let position_data = Block::default()
+    .title("Stereographic Coordinates")
+    .borders(Borders::ALL);
+
+    let text = vec![
+        text::Line::from(vec![
+            Span::from("Azimuth: "),
+            Span::styled(format!("{:.5} deg", (app.usr_geodetic.get_x() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
+        ]),
+        text::Line::from(vec![
+            Span::from("Elevation: "),
+            Span::styled(format!("{:.5} deg",(app.usr_geodetic.get_y() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
+        ])
+    ];
+
+    let data = Paragraph::new(text)
+        .block(position_data)
+        .style(Style::default().fg(Color::White));
+
+    frame.render_widget(data, area);   
+}
+
 fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
 {
     let position_data = Block::default()
