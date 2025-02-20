@@ -1,11 +1,11 @@
 #[derive(Clone)]
-pub struct Vector3 {
+pub struct PositionVector {
     pub x: f64,
     pub y: f64,
     pub z: f64,
 }
 
-impl Vector3 {
+impl PositionVector {
 
     const SEMI_MAYOR_AXIS: f64 = 6378.137; // Equatorial radius
     const SEMI_MINOR_AXIS: f64 = 6356.752; // Polar radius
@@ -71,7 +71,7 @@ impl Vector3 {
      * The geodetic vetor should have the followiung format: (latitude, longitude, height)
      * while the ecef will be: (x, y, z)
     */
-    pub fn geodetic_to_ecef(&self) -> Vector3
+    pub fn geodetic_to_ecef(&self) -> PositionVector
     {
         // https://en.wikipedia.org/wiki/Geographic_coordinate_conversion
         // https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
@@ -80,14 +80,14 @@ impl Vector3 {
 
         let n = self.prime_vertical_radius(self.x);
 
-        Vector3::new(
+        PositionVector::new(
             (self.get_z() + n)*self.get_y().cos()*self.get_x().cos(), 
             (self.get_z() + n)*self.get_y().sin()*self.get_x().cos(), 
             (self.get_z() + n)*self.get_x().sin()
         )
     }
 
-    pub fn ecef_to_geodetic(&self) -> Vector3
+    pub fn ecef_to_geodetic(&self) -> PositionVector
     {
         // https://en.wikipedia.org/wiki/Geodetic_coordinates
 
@@ -98,11 +98,11 @@ impl Vector3 {
 
         let h = p / lat.cos();
         
-        Vector3::new(lat, lon, h - self.prime_vertical_radius(lat))
+        PositionVector::new(lat, lon, h - self.prime_vertical_radius(lat))
     }
 
     // Takes the sat vector as geodetic and using the client vector its computes the ENU coordinates
-    pub fn ecef_to_enu(client_ecef: &Vector3, satellite_ecef: &Vector3) -> Vector3
+    pub fn ecef_to_enu(client_ecef: &PositionVector, satellite_ecef: &PositionVector) -> PositionVector
     {
         // https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
         
@@ -114,13 +114,13 @@ impl Vector3 {
     
         let p_module = (p.get_x().powi(2) + p.get_y().powi(2) + p.get_z().powi(2)).sqrt();
     
-        let p_normalized = Vector3::new(p.get_x() / p_module, p.get_y() / p_module, p.get_z() / p_module); // TODO: implement as part of Vector3
+        let p_normalized = PositionVector::new(p.get_x() / p_module, p.get_y() / p_module, p.get_z() / p_module); // TODO: implement as part of PositionVector
     
         // Apply rotation matrix
         let lat = client_geodetic.get_x();
         let lon = client_geodetic.get_y();
     
-        let p_enu = Vector3::new(-p_normalized.get_x()*lon.sin() + p_normalized.get_y()*lon.cos(),
+        let p_enu = PositionVector::new(-p_normalized.get_x()*lon.sin() + p_normalized.get_y()*lon.cos(),
                                 -p_normalized.get_x()*lon.cos()*lat.sin() - p_normalized.get_y()*lon.sin()*lat.sin() + p_normalized.get_z()*lat.cos(),
                                 p_normalized.get_x()*lon.cos()*lat.cos() + p_normalized.get_y()*lon.sin()*lat.cos() + p_normalized.get_z()*lat.sin());
     

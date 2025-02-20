@@ -1,35 +1,37 @@
 
 use super::orbit::Orbit;
 use super::tle::TLE;
-use super::propagator::Propagator;
-use super::vector::Vector3;
+use super::propagator::{Propagate, SGP4};
+use super::vector::PositionVector;
 
 use chrono::{Utc, TimeZone, NaiveDate, NaiveTime, Timelike};
 use julian::Calendar;
 
 pub struct Satellite 
 {
-    propagator: Propagator,
+    propagator: Box<dyn Propagate>,
     tle: TLE,
     points: Vec<(f64, f64)>,
+    coords_eci: PositionVector,
     gst: f64
 }  
 
 impl Satellite
 {
-    pub fn new(tle_path: &str, propagator: Propagator) -> Self
+    pub fn new(tle_path: &str) -> Self
     {
         let tle = TLE::new(tle_path);
         let orbit = Orbit::new(&tle);
-        let mut propagator = Propagator::new(orbit);
+        let mut propagator = SGP4::new(orbit);
 
-        propagator.calculate_constants();
+        propagator.initialize();
 
         Satellite
         {
-            propagator: propagator,
+            propagator: Box::new(propagator),
             tle: tle,
             points: Vec::new(),
+            coords_eci: PositionVector::new(0.0, 0.0, 0.0),
             gst: 0.0
         }
     }
@@ -64,7 +66,7 @@ impl Satellite
         for i in -60..60
         {
             self.gst = self.get_gst(Self::get_julian_day() + (i as f64 / (60.0*24.0)));
-            self.propagator.propagate(self.time_since_epoch_in_minutes() + i as f64);
+            self.coords_eci = self.propagator.propagate(self.time_since_epoch_in_minutes() + i as f64);
             self.points.push((self.get_geodetic_position().get_y() * (180.0/core::f64::consts::PI), self.get_geodetic_position().get_x() * (180.0/core::f64::consts::PI)));
         }
     }
@@ -91,14 +93,14 @@ impl Satellite
         return gmst_rads;
     }
 
-    pub fn get_eci_position(&self) -> &Vector3
+    pub fn get_eci_position(&self) -> &PositionVector
     {
-        return self.propagator.get_position_eci();
+        return &self.coords_eci;
     }
 
-    pub fn get_geodetic_position(&self) -> Vector3 // (latitude, longitude, altitude)
+    pub fn get_geodetic_position(&self) -> PositionVector // (latitude, longitude, altitude)
     {
-        let mut pos_geodetic = self.propagator.model.get_position_eci().ecef_to_geodetic();
+        let mut pos_geodetic = self.coords_eci.ecef_to_geodetic();
 
         // Convert to real geodetic(ecef)
         pos_geodetic.set_y((pos_geodetic.get_y() - self.gst + core::f64::consts::PI).rem_euclid(2.0*core::f64::consts::PI) - core::f64::consts::PI);
@@ -116,7 +118,7 @@ impl Satellite
     {
         self.gst = self.get_gst(Self::get_julian_day());
 
-        self.propagator.propagate(self.time_since_epoch_in_minutes());
+        self.coords_eci = self.propagator.propagate(self.time_since_epoch_in_minutes());
     }
 
     // Function to calculate the time difference between two NaiveDateTime in minutes

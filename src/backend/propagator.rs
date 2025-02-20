@@ -1,44 +1,6 @@
 
 use super::orbit::Orbit;
-use super::vector::Vector3;
-
-pub enum HighAltitude {
-    No {},
-    // Yes {
-    //     c5: f64,
-    //     d2: f64,
-    //     d3: f64,
-    //     d4: f64,
-    //     eta: f64,
-    //     k7: f64,
-    //     k8: f64,
-    //     k9: f64,
-    //     k10: f64,
-    //     elliptic: Elliptic,
-    // },
-}
-
-pub enum Model {
-    NearEarth(SGP4),
-    DeepSpace(SDP4)
-}
-
-pub trait Propagate {
-    fn propagate(&self, delta_time: f64) -> Vector3;
-}
-
-pub struct Propagator 
-{
-    pub model: Box<dyn Propagate>,
-    pub orbit_0: Orbit,
-}
-
-impl Propagator {
-    pub fn propagate(&self, delta_time: f64) {
-        self.model.propagate(delta_time);
-    }
-}
-
+use super::vector::PositionVector;
 
 const KE: f64 = 0.07436685316871385;
 const S: f64 = 1.0122292763545218;
@@ -51,6 +13,11 @@ const AE: f64 = 1.0;            // Equatorial radius of t ehe earth
 const K2: f64 = 0.5*J2*AE*AE;
 const K4: f64 = (-3.0/8.0)*J4*AE*AE*AE*AE;
 const A30: f64 = -J3*AE*AE*AE;
+
+pub trait Propagate {
+    fn initialize(&mut self);
+    fn propagate(&mut self, delta_time: f64) -> PositionVector;
+}
 
 pub struct SGP4 {
     pub orbit_0: Orbit,
@@ -67,7 +34,6 @@ pub struct SGP4 {
     d2:     f64,
     d3:     f64,
     d4:     f64,
-    position_eci: Vector3, 
 }
 
 pub struct SDP4 {
@@ -76,65 +42,7 @@ pub struct SDP4 {
 }
 
 impl Propagate for SGP4 {
-    fn propagate(&self, delta_time: f64){
-        self.propagate_test(delta_time); // TODO: better naming
-    }
-}
-
-impl SGP4 {
-    pub fn new(orbit_0 :Orbit) -> Self
-    {
-        SGP4 {
-            orbit_0: orbit_0,
-            semimayor_axis:    0.0, 
-            phita:  0.0,
-            exilon:  0.0,
-            eta:     0.0,
-            beta0:     0.0,
-            c1:     0.0,
-            c2:     0.0,
-            c3:     0.0,
-            c4:     0.0,
-            c5:     0.0,
-            d2:     0.0,
-            d3:     0.0,
-            d4:     0.0,
-            position_eci: Vector3::new(0.0, 0.0, 0.0)
-        }
-    }
-
-    pub fn print_data(&self)
-    {
-        println!("\nSGP4 Model Data: ");
-        println!("C1:  {}", self.c1);
-        println!("C2:  {}", self.c2);
-        println!("C3:  {}", self.c3);
-        println!("C4:  {}", self.c4);
-        println!("C5:  {}", self.c5);
-        println!("D2:  {}", self.d2);
-        println!("D3:  {}", self.d3);
-        println!("D4:  {}", self.d4);
-    }
-    
-    pub fn recover_a02_n02(&mut self) 
-    {
-        let a1 = (KE/self.orbit_0.mean_motion).powf(2.0/3.0);
-
-        let d_aux = (3.0/2.0) * (K2 * (3.0*(self.orbit_0.inclination.cos()).powi(2) - 1.0))
-            / ((1.0 - self.orbit_0.eccentricity.powi(2)).powf(3.0/2.0));
-
-        let d1 = d_aux / (a1*a1);
-
-        let a0 = a1 * (1.0 - (1.0/3.0)*d1 - d1*d1 - (134.0/81.0)*d1.powi(3));
-
-        let d0 = d_aux / (a0*a0);
-
-        self.orbit_0.mean_motion = self.orbit_0.mean_motion / (1.0 + d0);
-
-        self.semimayor_axis = a0 / (1.0 - d0);
-    }
-
-    pub fn calculate_constants(&mut self)
+    fn initialize(&mut self)
     {
         self.recover_a02_n02();
 
@@ -174,7 +82,7 @@ impl SGP4 {
     }
 
     // Note: this provides the coordinates in TEME, meaning that it doesnt have an earth-fixed frame, that would be the ECEF
-    pub fn propagate_test(&mut self, delta_time: f64)
+    fn propagate(&mut self, delta_time: f64) -> PositionVector
     {
         let mdf = self.orbit_0.mean_anomaly + (1.0 + (3.0*K2 * (-1.0+3.0*self.phita*self.phita))/(2.0*self.semimayor_axis*self.semimayor_axis*self.beta0.powi(3))
             + (3.0*K2*K2 * (13.0 - 78.0*self.phita*self.phita + 137.0*self.phita.powi(4)))/(16.0*self.semimayor_axis.powi(4)*self.beta0.powi(7)))
@@ -291,13 +199,61 @@ impl SGP4 {
         let ry = rk * uy;
         let rz = rk * uz;
 
-        self.position_eci.set_x(rx*ER); // In scale of ER, so 1.0 = ER
-        self.position_eci.set_y(ry*ER);
-        self.position_eci.set_z(rz*ER);
+        PositionVector::new(rx*ER, ry*ER, rz*ER)
     }
 
-    pub fn get_position_eci(&self) -> &Vector3
+}
+
+impl SGP4 {
+    pub fn new(orbit_0 :Orbit) -> Self
     {
-        &self.position_eci
+        SGP4 {
+            orbit_0: orbit_0,
+            semimayor_axis:    0.0, 
+            phita:  0.0,
+            exilon:  0.0,
+            eta:     0.0,
+            beta0:     0.0,
+            c1:     0.0,
+            c2:     0.0,
+            c3:     0.0,
+            c4:     0.0,
+            c5:     0.0,
+            d2:     0.0,
+            d3:     0.0,
+            d4:     0.0,
+        }
     }
+
+    pub fn print_data(&self)
+    {
+        println!("\nSGP4 Model Data: ");
+        println!("C1:  {}", self.c1);
+        println!("C2:  {}", self.c2);
+        println!("C3:  {}", self.c3);
+        println!("C4:  {}", self.c4);
+        println!("C5:  {}", self.c5);
+        println!("D2:  {}", self.d2);
+        println!("D3:  {}", self.d3);
+        println!("D4:  {}", self.d4);
+    }
+    
+    pub fn recover_a02_n02(&mut self) 
+    {
+        let a1 = (KE/self.orbit_0.mean_motion).powf(2.0/3.0);
+
+        let d_aux = (3.0/2.0) * (K2 * (3.0*(self.orbit_0.inclination.cos()).powi(2) - 1.0))
+            / ((1.0 - self.orbit_0.eccentricity.powi(2)).powf(3.0/2.0));
+
+        let d1 = d_aux / (a1*a1);
+
+        let a0 = a1 * (1.0 - (1.0/3.0)*d1 - d1*d1 - (134.0/81.0)*d1.powi(3));
+
+        let d0 = d_aux / (a0*a0);
+
+        self.orbit_0.mean_motion = self.orbit_0.mean_motion / (1.0 + d0);
+
+        self.semimayor_axis = a0 / (1.0 - d0);
+    }
+
 }

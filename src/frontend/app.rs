@@ -1,6 +1,6 @@
 use crate::Satellite;
 
-use crate::Vector3;
+use crate::PositionVector;
 
 use ratatui::{
     widgets::ListState,
@@ -34,7 +34,7 @@ pub struct App<'a> {
     pub sat: Satellite,
     pub tabs: TabsState<'a>,
     pub should_quit: bool,
-    pub usr_geodetic: Vector3,
+    pub usr_geodetic: PositionVector,
     pub input_mode: bool,
     pub buffer: String,
 }   
@@ -51,7 +51,7 @@ impl<'a> App<'a> {
             sat,
             tabs: TabsState::new(vec!["Map Projection", "Azimuthal Projection", "About"]),
             should_quit: false,
-            usr_geodetic: Vector3::new(Self::DEF_LAT, Self::DEF_LON, 0.0),
+            usr_geodetic: PositionVector::new(Self::DEF_LAT, Self::DEF_LON, 0.0),
             input_mode: false,
             buffer: String::new()
         }
@@ -131,7 +131,7 @@ impl<'a> App<'a> {
         {    return;   } // TODO: Error handling
         let alt = value.unwrap();
 
-        self.usr_geodetic = Vector3::new(lat, lon, alt);
+        self.usr_geodetic = PositionVector::new(lat, lon, alt);
 
         self.input_mode = false;
         self.buffer.clear();

@@ -1,6 +1,6 @@
 use crate::App;
 
-use crate::Vector3;
+use crate::PositionVector;
 
 use ratatui::{
     style::{Style, Color, Modifier},
@@ -406,7 +406,7 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     let usr_ecef = app.usr_geodetic.geodetic_to_ecef();
     let sat_ecef = sat_geodetic.geodetic_to_ecef();
     
-    let p_enu = Vector3::ecef_to_enu(&usr_ecef, &sat_ecef);
+    let p_enu = PositionVector::ecef_to_enu(&usr_ecef, &sat_ecef);
     
     // ctx.layer();
  
@@ -419,9 +419,9 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     ctx.layer();
 
     let p_module = (p_enu.get_x().powi(2) + p_enu.get_y().powi(2) + p_enu.get_z().powi(2)).sqrt();
-    let p_enu_normalized = Vector3::new(p_enu.get_x() / p_module, p_enu.get_y() / p_module, p_enu.get_z() / p_module);
+    let p_enu_normalized = PositionVector::new(p_enu.get_x() / p_module, p_enu.get_y() / p_module, p_enu.get_z() / p_module);
 
-    let p_spheric = Vector3::new(p_enu.get_x().atan2(p_enu.get_y()),  p_enu.get_z().asin(), 0.0);
+    let p_spheric = PositionVector::new(p_enu.get_x().atan2(p_enu.get_y()),  p_enu.get_z().asin(), 0.0);
     
     ctx.print(100.0, 0.0, format!("Elevation: {:.5}", p_spheric.get_y()*(180.0/core::f64::consts::PI)));
     ctx.print(100.0, -10.0, format!("Azimuth: {:.5}", p_spheric.get_x()*(180.0/core::f64::consts::PI)));
