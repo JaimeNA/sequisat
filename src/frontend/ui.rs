@@ -15,7 +15,7 @@ use ratatui::{
 
 const USAGE: &str = "c - Set user Coordinates | q - Quit";
 
-const POPUP_WIDTH: u16 = 50;
+const POPUP_WIDTH: u16 = 55;
 const POPUP_HEIGHT: u16 = 3;
 
 const DARK_BLUE: Color = Color::Rgb(16, 24, 48);
@@ -46,7 +46,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         let area = Rect::new(x, y, POPUP_WIDTH, POPUP_HEIGHT).clamp(frame.area()); // Clamps rect inside the frame
 
         let position_data = Block::default()
-        .title("Set user coordinates: 'lat(deg) lon(deg) alt(km)'")
+        .title("Set user coordinates: [lat(deg)] [lon(deg)] [alt(km)]")
         .borders(Borders::ALL);
     
         let data = Paragraph::new(app.buffer.clone())

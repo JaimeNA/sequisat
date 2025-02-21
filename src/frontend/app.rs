@@ -88,51 +88,58 @@ impl<'a> App<'a> {
     pub fn on_key_input(&mut self, c: KeyCode) {
         match c {
             KeyCode::Enter => {
-                self.set_user_coordinates();
+                self.usr_geodetic = self.get_user_coordinates();
+            },
+            KeyCode::Backspace => {
+                self.buffer.pop();
             },
             KeyCode::Char(c) => self.buffer.push(c),
             _ => {}
         }
     }
 
-    pub fn set_user_coordinates(&mut self) {
+    pub fn get_user_coordinates(&mut self) -> PositionVector {
         let mut columns = self.buffer.split_whitespace();
 
         let mut input = columns.next();
 
         // Get latitude
         if input.is_none()
-        {    return;   } // TODO: Error handling
+        {    return self.usr_geodetic.clone();   } // TODO: Error handling
         let mut value = input.unwrap().parse::<f64>();
 
         if value.is_err()
-        {    return;   } // TODO: Error handling
+        {    return self.usr_geodetic.clone();   } // TODO: Error handling
         let lat = value.unwrap() * (core::f64::consts::PI/180.0);
 
         input = columns.next();
 
         // Get longitude
         if input.is_none()
-        {    return;   } // TODO: Error handling
+        {    return self.usr_geodetic.clone();   } // TODO: Error handling
         value = input.unwrap().parse::<f64>();
 
         if value.is_err()
-        {    return;   } // TODO: Error handling
+        {    return self.usr_geodetic.clone();   } // TODO: Error handling
         let lon = value.unwrap() * (core::f64::consts::PI/180.0);
         
         input = columns.next();
 
         // Get altitude
         if input.is_none()
-        {    return;   } // TODO: Error handling
+        {    return self.usr_geodetic.clone();   } // TODO: Error handling
         value = input.unwrap().parse::<f64>();
 
         if value.is_err()
-        {    return;   } // TODO: Error handling
+        {    return self.usr_geodetic.clone();   } // TODO: Error handling
         let alt = value.unwrap();
 
-        self.usr_geodetic = PositionVector::new(lat, lon, alt);
+        self.visual_mode();
+        
+        PositionVector::new(lat, lon, alt)
+    }
 
+    fn visual_mode(&mut self) { 
         self.input_mode = false;
         self.buffer.clear();
     }
