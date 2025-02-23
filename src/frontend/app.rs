@@ -44,6 +44,8 @@ impl<'a> App<'a> {
     const DEF_LAT: f64 = -34.603599 * (core::f64::consts::PI/180.0);
     const DEF_LON: f64 = -58.381555 * (core::f64::consts::PI/180.0); // Buenos Aires, Argentina
 
+    const INPUT_ARG_ERROR: &'static str = "Invalid number of arguments";
+    const INPUT_TYPE_ERROR: &'static str = "Invalid type";
 
     pub fn new(title: &'a str, sat: Satellite) -> Self{
         Self {
@@ -85,10 +87,16 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn on_key_input(&mut self, c: KeyCode) {
+    pub fn on_key_input(&mut self, c: KeyCode) -> Result<(), &str> {
         match c {
             KeyCode::Enter => {
-                self.usr_geodetic = self.get_user_coordinates();
+                let result = self.get_user_coordinates();
+
+                if let Err(e) = result {
+                    return Err(e);
+                }
+                
+                self.usr_geodetic = result;
             },
             KeyCode::Backspace => {
                 self.buffer.pop();
@@ -96,47 +104,53 @@ impl<'a> App<'a> {
             KeyCode::Char(c) => self.buffer.push(c),
             _ => {}
         }
+
+        Ok(())
     }
 
-    pub fn get_user_coordinates(&mut self) -> PositionVector {
+    fn get_error_msg(msg: &str) -> &str {
+        "format!(ERROR::APP: {}, msg).clone().as_str()"
+    }
+
+    pub fn get_user_coordinates(&mut self) -> Result<PositionVector, &str> { // TODO: use lifetime
         let mut columns = self.buffer.split_whitespace();
 
         let mut input = columns.next();
 
         // Get latitude
         if input.is_none()
-        {    return self.usr_geodetic.clone();   } // TODO: Error handling
+        {    return Err(Self::get_error_msg(Self::INPUT_ARG_ERROR));   }
         let mut value = input.unwrap().parse::<f64>();
 
         if value.is_err()
-        {    return self.usr_geodetic.clone();   } // TODO: Error handling
+        {    return Err(Self::get_error_msg(Self::INPUT_TYPE_ERROR));   }
         let lat = value.unwrap() * (core::f64::consts::PI/180.0);
 
         input = columns.next();
 
         // Get longitude
         if input.is_none()
-        {    return self.usr_geodetic.clone();   } // TODO: Error handling
+        {    return Err(Self::get_error_msg(Self::INPUT_ARG_ERROR));   }
         value = input.unwrap().parse::<f64>();
 
         if value.is_err()
-        {    return self.usr_geodetic.clone();   } // TODO: Error handling
+        {    return Err(Self::get_error_msg(Self::INPUT_TYPE_ERROR));   }
         let lon = value.unwrap() * (core::f64::consts::PI/180.0);
         
         input = columns.next();
 
         // Get altitude
         if input.is_none()
-        {    return self.usr_geodetic.clone();   } // TODO: Error handling
+        {    return Err(Self::get_error_msg(Self::INPUT_ARG_ERROR));   }
         value = input.unwrap().parse::<f64>();
 
         if value.is_err()
-        {    return self.usr_geodetic.clone();   } // TODO: Error handling
+        {    return Err(Self::get_error_msg(Self::INPUT_TYPE_ERROR));   } 
         let alt = value.unwrap();
 
         self.visual_mode();
         
-        PositionVector::new(lat, lon, alt)
+        Ok(PositionVector::new(lat, lon, alt))
     }
 
     fn visual_mode(&mut self) { 
