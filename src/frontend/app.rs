@@ -7,6 +7,46 @@ use ratatui::{
     crossterm::event::KeyCode
 };
 
+pub enum MessageType {
+    Error,
+    Warning,
+    Info
+}
+
+impl MessageType {
+    pub fn name(&self) -> &'static str {
+        match self {
+            MessageType::Error => "Error",
+            MessageType::Warning => "Warning",
+            MessageType::Info => "Info",
+        }
+    }
+}
+
+pub struct Message {
+    msg_type: MessageType,
+    msg: String
+}
+
+impl Message {
+    pub fn new(msg_type: MessageType, msg: String) -> Self {
+        Self{
+            msg_type: msg_type,
+            msg: msg
+        }
+    }
+
+    pub fn get_type(&self) -> &MessageType
+    {
+        &self.msg_type
+    } 
+
+    pub fn get_message(&self) -> &String
+    {
+        &self.msg
+    }
+}
+
 pub struct TabsState<'a> {
     pub titles: Vec<&'a str>,
     pub index: usize,
@@ -29,7 +69,7 @@ impl<'a> TabsState<'a> {
     }
 }
 
-pub struct App<'a> {
+pub struct App<'a> { // TODO: Check if pub is necessary
     pub title: &'a str,
     pub sat: Satellite,
     pub tabs: TabsState<'a>,
@@ -37,6 +77,7 @@ pub struct App<'a> {
     pub usr_geodetic: PositionVector,
     pub input_mode: bool,
     pub buffer: String,
+    messages: Vec<Message>
 }   
 
 impl<'a> App<'a> {
@@ -55,8 +96,23 @@ impl<'a> App<'a> {
             should_quit: false,
             usr_geodetic: PositionVector::new(Self::DEF_LAT, Self::DEF_LON, 0.0),
             input_mode: false,
-            buffer: String::new()
+            buffer: String::new(),
+            messages: Vec::new()
         }
+    }
+
+    fn pop_message(&mut self) {
+        if !self.messages.is_empty() {
+            self.messages.pop();
+        }
+    }
+
+    fn push_message(&mut self, msg: Message) {
+        self.messages.push(msg);
+    }
+
+    pub fn get_messages(&self) -> &Vec<Message> {
+        &self.messages
     }
 
     pub fn on_up(&mut self) {
@@ -83,20 +139,23 @@ impl<'a> App<'a> {
             KeyCode::Char('c') => {
                 self.input_mode = true;
             },
+            KeyCode::Enter => self.pop_message(),
             _ => {}
         }
     }
 
-    pub fn on_key_input(&mut self, c: KeyCode) -> Result<(), &str> {
+    pub fn on_key_input(&mut self, c: KeyCode) {
         match c {
             KeyCode::Enter => {
-                let result = self.get_user_coordinates();
+                self.visual_mode();
 
-                if let Err(e) = result {
-                    return Err(e);
+                let result = Self::text_to_coordinates(self.buffer.clone());
+
+                if  let Err(e) = result {
+                    self.push_message(Message::new(MessageType::Error, e));
+                } else {
+                    self.usr_geodetic = result.unwrap();
                 }
-                
-                self.usr_geodetic = result;
             },
             KeyCode::Backspace => {
                 self.buffer.pop();
@@ -104,16 +163,14 @@ impl<'a> App<'a> {
             KeyCode::Char(c) => self.buffer.push(c),
             _ => {}
         }
-
-        Ok(())
     }
 
-    fn get_error_msg(msg: &str) -> &str {
-        "format!(ERROR::APP: {}, msg).clone().as_str()"
+    fn get_error_msg(msg: &str) -> String {
+        format!("ERROR::APP: {}", msg)
     }
 
-    pub fn get_user_coordinates(&mut self) -> Result<PositionVector, &str> { // TODO: use lifetime
-        let mut columns = self.buffer.split_whitespace();
+    fn text_to_coordinates(text: String) -> Result<PositionVector, String> { // TODO: use lifetime
+        let mut columns = text.split_whitespace();
 
         let mut input = columns.next();
 
@@ -148,8 +205,6 @@ impl<'a> App<'a> {
         {    return Err(Self::get_error_msg(Self::INPUT_TYPE_ERROR));   } 
         let alt = value.unwrap();
 
-        self.visual_mode();
-        
         Ok(PositionVector::new(lat, lon, alt))
     }
 

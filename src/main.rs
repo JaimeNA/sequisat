@@ -52,7 +52,7 @@ fn run_app<B: Backend>(
                         (false, KeyCode::Right | KeyCode::Char('l')) => app.on_right(),
                         (false, KeyCode::Down | KeyCode::Char('j')) => app.on_down(),
                         (false, _) => app.on_key_normal(key.code),
-                        (true, _) => app.on_key_input(key.code).unwrap()
+                        (true, _) => app.on_key_input(key.code)
                     }
                 }
             }

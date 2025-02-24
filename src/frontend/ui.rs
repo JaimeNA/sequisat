@@ -56,7 +56,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         frame.render_widget(Clear, area);
         frame.render_widget(data, area);   
     }
-
+    show_messages(frame, app);
 }
 
 fn draw_title_bar(frame: &mut Frame, app: &mut App, area: Rect)
@@ -455,3 +455,25 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
         color: Color::Blue,
     });
 }
+
+
+pub fn show_messages(frame: &mut Frame, app: &mut App){
+
+    let area = Rect::new(10, 10, POPUP_WIDTH, POPUP_HEIGHT).clamp(frame.area());
+
+    let lst_msg = app.get_messages().last();
+    if let Some(msg) = lst_msg {
+        let position_data = Block::default()
+        .title(msg.get_type().name())
+        .borders(Borders::ALL);
+    
+        let data = Paragraph::new(msg.get_message().clone())
+        .block(position_data)
+        .style(Style::default().fg(Color::White));
+    
+        frame.render_widget(Clear, area);  
+        frame.render_widget(data, area);   
+    }
+    
+}
+
