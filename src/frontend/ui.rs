@@ -1,24 +1,28 @@
 use crate::App;
 
 use crate::PositionVector;
+use crate::frontend::app::MessageType;
 
 use ratatui::{
     style::{Style, Color, Modifier},
     widgets::{Borders, Block, Paragraph, Tabs, Clear},
     widgets::canvas::{Canvas, Points, Circle, Line, MapResolution, Map, Context},
-    prelude::{Constraint, Rect, Direction, Layout},
+    prelude::{Constraint, Rect, Direction, Layout, Stylize},
     text::Span,
     symbols,
     text,
     Frame
 };
 
-const USAGE: &str = "c - Set user Coordinates | q - Quit";
+const USAGE: &str = "c - Set user Coordinates | Enter - Clear popups | q - Quit";
 
 const POPUP_WIDTH: u16 = 55;
 const POPUP_HEIGHT: u16 = 3;
 
+const DARK_RED: Color = Color::Rgb(150, 24, 16);
 const DARK_BLUE: Color = Color::Rgb(16, 24, 48);
+const AMBER: Color = Color::Rgb(255, 191, 0);
+const GRAY: Color = Color::Rgb(50, 50, 50);
 const WHITE: Color = Color::Rgb(238, 238, 238); // not really white, often #eeeeee
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -459,13 +463,23 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
 
 pub fn show_messages(frame: &mut Frame, app: &mut App){
 
-    let area = Rect::new(10, 10, POPUP_WIDTH, POPUP_HEIGHT).clamp(frame.area());
+    let area = Rect::new(0, 0, POPUP_WIDTH, POPUP_HEIGHT).clamp(frame.area());
 
     let lst_msg = app.get_messages().last();
     if let Some(msg) = lst_msg {
+
+        let color = match msg.get_type() {
+            MessageType::Error => DARK_RED,
+            MessageType::Warning => AMBER,
+            MessageType::Info => GRAY,
+            _ => Color::White
+        };
+
+        let title = format!("Message {}: {}", app.get_messages().len(), msg.get_type().name());
         let position_data = Block::default()
-        .title(msg.get_type().name())
-        .borders(Borders::ALL);
+        .title(title)
+        .borders(Borders::ALL)
+        .bg(color);
     
         let data = Paragraph::new(msg.get_message().clone())
         .block(position_data)

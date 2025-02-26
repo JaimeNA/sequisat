@@ -147,9 +147,9 @@ impl<'a> App<'a> {
     pub fn on_key_input(&mut self, c: KeyCode) {
         match c {
             KeyCode::Enter => {
-                self.visual_mode();
-
                 let result = Self::text_to_coordinates(self.buffer.clone());
+
+                self.visual_mode();
 
                 if  let Err(e) = result {
                     self.push_message(Message::new(MessageType::Error, e));
