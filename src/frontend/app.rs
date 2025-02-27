@@ -7,6 +7,11 @@ use ratatui::{
     crossterm::event::KeyCode
 };
 
+use std::{
+    fs,
+    fs::ReadDir
+};
+
 pub enum MessageType {
     Error,
     Warning,
@@ -69,7 +74,7 @@ impl<'a> TabsState<'a> {
     }
 }
 
-pub struct App<'a> { // TODO: Check if pub is necessary
+pub struct App<'a> {  // TODO: Make em private
     pub title: &'a str,
     pub sat: Satellite,
     pub tabs: TabsState<'a>,
@@ -77,7 +82,8 @@ pub struct App<'a> { // TODO: Check if pub is necessary
     pub usr_geodetic: PositionVector,
     pub input_mode: bool,
     pub buffer: String,
-    messages: Vec<Message>
+    messages: Vec<Message>,
+    pub options: Vec<String>
 }   
 
 impl<'a> App<'a> {
@@ -88,7 +94,8 @@ impl<'a> App<'a> {
     const INPUT_ARG_ERROR: &'static str = "Invalid number of arguments";
     const INPUT_TYPE_ERROR: &'static str = "Invalid type";
 
-    pub fn new(title: &'a str, sat: Satellite) -> Self{
+    pub fn new(title: &'a str, sat: Satellite) -> Self {
+
         Self {
             title,
             sat,
@@ -97,7 +104,9 @@ impl<'a> App<'a> {
             usr_geodetic: PositionVector::new(Self::DEF_LAT, Self::DEF_LON, 0.0),
             input_mode: false,
             buffer: String::new(),
-            messages: Vec::new()
+            messages: Vec::new(),
+
+            options: Self::get_tle_files() // EXPERIMENTAL
         }
     }
 
@@ -139,6 +148,10 @@ impl<'a> App<'a> {
             KeyCode::Char('c') => {
                 self.input_mode = true;
             },
+            KeyCode::Char('f') => {
+               
+                self.push_message(Message::new(MessageType::Info, Self::get_tle_files().last().unwrap().to_string()));
+            },
             KeyCode::Enter => self.pop_message(),
             _ => {}
         }
@@ -147,10 +160,13 @@ impl<'a> App<'a> {
     pub fn on_key_input(&mut self, c: KeyCode) {
         match c {
             KeyCode::Enter => {
+                // Process the current buffer
                 let result = Self::text_to_coordinates(self.buffer.clone());
 
+                // Return to normal mode
                 self.visual_mode();
 
+                // Check for errors
                 if  let Err(e) = result {
                     self.push_message(Message::new(MessageType::Error, e));
                 } else {
@@ -169,7 +185,7 @@ impl<'a> App<'a> {
         format!("ERROR::APP: {}", msg)
     }
 
-    fn text_to_coordinates(text: String) -> Result<PositionVector, String> { // TODO: use lifetime
+    fn text_to_coordinates(text: String) -> Result<PositionVector, String> {
         let mut columns = text.split_whitespace();
 
         let mut input = columns.next();
@@ -206,6 +222,25 @@ impl<'a> App<'a> {
         let alt = value.unwrap();
 
         Ok(PositionVector::new(lat, lon, alt))
+    }
+
+    fn get_tle_files() -> Vec<String> {
+        let mut tles = Vec::new();
+    
+        // Get the current directory
+        let current_dir = ".";
+
+        // Read the entries in the current directory
+        for entry in fs::read_dir(current_dir).expect("Failed to read directory") {
+            let entry = entry.expect("Failed to read entry"); // TODO: Error handling
+            
+            // Check if it's a file and if it ends with .tle
+            if entry.path().is_file() && entry.path().extension().map(|ext| ext == "tle").unwrap_or(false) {
+                tles.push(entry.file_name().to_string_lossy().to_string());
+            }
+        }
+
+        tles
     }
 
     fn visual_mode(&mut self) { 

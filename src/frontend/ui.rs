@@ -5,7 +5,7 @@ use crate::frontend::app::MessageType;
 
 use ratatui::{
     style::{Style, Color, Modifier},
-    widgets::{Borders, Block, Paragraph, Tabs, Clear},
+    widgets::{Borders, Block, Paragraph, Tabs, Clear, List, ListDirection},
     widgets::canvas::{Canvas, Points, Circle, Line, MapResolution, Map, Context},
     prelude::{Constraint, Rect, Direction, Layout, Stylize},
     text::Span,
@@ -35,6 +35,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
  
     draw_title_bar(frame, app, title_bar);
 
+    // Draw the selected tab
     match app.tabs.index {
         0 => draw_map_tab(frame, app, tab),
         1 => draw_azimuth_tab(frame, app, tab),
@@ -44,6 +45,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     if app.input_mode {
 
+        // The middle of the frame
         let x = (frame.area().width - POPUP_WIDTH) / 2;
         let y = (frame.area().height - POPUP_HEIGHT) / 2;
 
@@ -57,6 +59,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             .block(position_data)
             .style(Style::default().fg(Color::White));
 
+        // Clear area before drawing
         frame.render_widget(Clear, area);
         frame.render_widget(data, area);   
     }
@@ -72,6 +75,7 @@ fn draw_title_bar(frame: &mut Frame, app: &mut App, area: Rect)
         .fg(WHITE)
         .add_modifier(Modifier::BOLD));
 
+    // Get tabs titles and join them on a Span for display
     let tabs = app
         .tabs
         .titles
@@ -90,6 +94,8 @@ fn draw_title_bar(frame: &mut Frame, app: &mut App, area: Rect)
     frame.render_widget(title, title_area);
     frame.render_widget(tabs, tabs_area);
 }
+
+// Main tabs 
 
 fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
 {
@@ -121,8 +127,9 @@ fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
              ].as_ref()
          )
          .split(chunks[1]);
-     draw_sat_coords(frame, app, chunklin[0]);
-     draw_user_coords(frame, app, chunklin[1]);
+    draw_sat_coords(frame, app, chunklin[0]);
+    //draw_user_coords(frame, app, chunklin[1]);
+    draw_tle_options(frame, app, chunklin[1]);
 }
 
 fn draw_azimuth_tab(frame: &mut Frame, app: &mut App, area: Rect)
@@ -191,6 +198,8 @@ fn draw_about_tab(frame: &mut Frame, app: &mut App, area: Rect)
 
     frame.render_widget(usage, chunks[1]);
 }
+
+// Blocks
 
  fn paint_map(ctx: &mut Context, app: &App)
  {
@@ -460,8 +469,29 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     });
 }
 
+fn draw_tle_options(frame: &mut Frame, app: &mut App, area: Rect)
+{
+    let title = "TLE Options";
+    let block = Block::default()
+        .title(title)
+        .borders(Borders::ALL);
+    
+    let list = List::new(app.options.clone())
+        .block(block)
+        .style(Style::new().white())
+        .highlight_style(Style::new().italic())
+        .highlight_symbol(">>")
+        .repeat_highlight_symbol(true)
+        .direction(ListDirection::BottomToTop);
+    
+    
+    frame.render_widget(Clear, area);  
+    frame.render_widget(list, area);   
+    
+    
+}
 
-pub fn show_messages(frame: &mut Frame, app: &mut App){
+fn show_messages(frame: &mut Frame, app: &mut App){
 
     let area = Rect::new(0, 0, POPUP_WIDTH, POPUP_HEIGHT).clamp(frame.area());
 
@@ -476,13 +506,13 @@ pub fn show_messages(frame: &mut Frame, app: &mut App){
         };
 
         let title = format!("Message {}: {}", app.get_messages().len(), msg.get_type().name());
-        let position_data = Block::default()
+        let block = Block::default()
         .title(title)
         .borders(Borders::ALL)
         .bg(color);
     
         let data = Paragraph::new(msg.get_message().clone())
-        .block(position_data)
+        .block(block)
         .style(Style::default().fg(Color::White));
     
         frame.render_widget(Clear, area);  

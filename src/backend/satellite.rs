@@ -124,7 +124,7 @@ impl Satellite
     // Function to calculate the time difference between two NaiveDateTime in minutes
     pub fn time_since_epoch_in_minutes(&self) -> f64 {
 
-        let epoch_year = self.tle.epoch_year; // TODO: fix
+        let epoch_year = self.tle.epoch_year; 
         let epoch_day = self.tle.epoch_day;
 
         let day_of_year = epoch_day as u32;
