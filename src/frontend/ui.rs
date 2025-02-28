@@ -5,7 +5,7 @@ use crate::frontend::app::MessageType;
 
 use ratatui::{
     style::{Style, Color, Modifier},
-    widgets::{Borders, Block, Paragraph, Tabs, Clear, List, ListDirection},
+    widgets::{Borders, Block, Paragraph, Tabs, Clear, List, ListDirection, ListState},
     widgets::canvas::{Canvas, Points, Circle, Line, MapResolution, Map, Context},
     prelude::{Constraint, Rect, Direction, Layout, Stylize},
     text::Span,
@@ -75,12 +75,12 @@ fn draw_title_bar(frame: &mut Frame, app: &mut App, area: Rect)
         .fg(WHITE)
         .add_modifier(Modifier::BOLD));
 
-    // Get tabs titles and join them on a Span for display
+    // Get tabs titles and join them on a Span for display, TODO: make it more idiomatic
     let tabs = app
         .tabs
         .titles
         .iter()
-        .map(|t| text::Line::from(Span::styled(*t, Style::default().fg(Color::Green))))
+        .map(|t| text::Line::from(Span::styled(t, Style::default().fg(Color::Green))))
         .collect::<Tabs>()
         .divider("|")
         .padding("", "")
@@ -475,8 +475,11 @@ fn draw_tle_options(frame: &mut Frame, app: &mut App, area: Rect)
     let block = Block::default()
         .title(title)
         .borders(Borders::ALL);
-    
-    let list = List::new(app.options.clone())
+
+    let mut state = ListState::default();   // Experimental
+    state.select(Some(app.tle_options.index));
+
+    let list = List::new(app.tle_options.titles.clone())
         .block(block)
         .style(Style::new().white())
         .highlight_style(Style::new().italic())
@@ -486,7 +489,7 @@ fn draw_tle_options(frame: &mut Frame, app: &mut App, area: Rect)
     
     
     frame.render_widget(Clear, area);  
-    frame.render_widget(list, area);   
+    frame.render_stateful_widget(list, area, &mut state); 
     
     
 }

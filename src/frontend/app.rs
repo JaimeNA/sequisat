@@ -3,8 +3,8 @@ use crate::Satellite;
 use crate::PositionVector;
 
 use ratatui::{
-    widgets::ListState,
-    crossterm::event::KeyCode
+    crossterm::event::KeyCode,
+    widgets::{List, ListItem}
 };
 
 use std::{
@@ -52,13 +52,13 @@ impl Message {
     }
 }
 
-pub struct TabsState<'a> {
-    pub titles: Vec<&'a str>,
+pub struct SelectionList<> {
+    pub titles: Vec<String>,
     pub index: usize,
 }
 
-impl<'a> TabsState<'a> {
-    pub const fn new(titles: Vec<&'a str>) -> Self {
+impl<> SelectionList<> {
+    pub const fn new(titles: Vec<String>) -> Self {
         Self { titles, index: 0 }
     }
     pub fn next(&mut self) {
@@ -77,13 +77,13 @@ impl<'a> TabsState<'a> {
 pub struct App<'a> {  // TODO: Make em private
     pub title: &'a str,
     pub sat: Satellite,
-    pub tabs: TabsState<'a>,
+    pub tabs: SelectionList,
     pub should_quit: bool,
     pub usr_geodetic: PositionVector,
     pub input_mode: bool,
     pub buffer: String,
     messages: Vec<Message>,
-    pub options: Vec<String>
+    pub tle_options: SelectionList
 }   
 
 impl<'a> App<'a> {
@@ -98,15 +98,15 @@ impl<'a> App<'a> {
 
         Self {
             title,
-            sat,
-            tabs: TabsState::new(vec!["Map Projection", "Azimuthal Projection", "About"]),
+            sat, // TODO: Check for better ways to declare tabs
+            tabs: SelectionList::new(vec!["Map Projection".to_string(), "Azimuthal Projection".to_string(), "About".to_string()]),
             should_quit: false,
             usr_geodetic: PositionVector::new(Self::DEF_LAT, Self::DEF_LON, 0.0),
             input_mode: false,
             buffer: String::new(),
             messages: Vec::new(),
 
-            options: Self::get_tle_files() // EXPERIMENTAL
+            tle_options: SelectionList::new(Self::get_tle_files()) // EXPERIMENTAL
         }
     }
 
