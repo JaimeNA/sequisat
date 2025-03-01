@@ -36,13 +36,16 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
  
     draw_title_bar(frame, app, title_bar);
 
-    // Draw the selected tab
-    match app.tabs.index {
-        0 => draw_map_tab(frame, app, tab),
-        1 => draw_azimuth_tab(frame, app, tab),
-        2 => draw_about_tab(frame, app, tab),
-        _ => {}
-    };
+    // Don't draw anything if there is no satellite
+    if app.get_sat().is_some() {
+        // Draw the selected tab
+        match app.tabs.index {
+            0 => draw_map_tab(frame, app, tab),
+            1 => draw_azimuth_tab(frame, app, tab),
+            2 => draw_about_tab(frame, app, tab),
+            _ => {}
+        };
+    }
 
     if app.input_mode {
 
@@ -242,14 +245,17 @@ fn draw_stereographic_coords(frame: &mut Frame, app: &mut App, area: Rect)
     .title("Stereographic Coordinates")
     .borders(Borders::ALL);
 
+    // Get Elevation and Azimuth
+    let el_az = get_azimuth_and_elevation(&app.usr_geodetic, &app.sat.get_geodetic_position());
+
     let text = vec![
         text::Line::from(vec![
             Span::from("Azimuth: "),
-            Span::styled(format!("{:.5} deg", (app.usr_geodetic.get_x() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
+            Span::styled(format!("{:.5} deg", (el_az.get_x() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
         ]),
         text::Line::from(vec![
             Span::from("Elevation: "),
-            Span::styled(format!("{:.5} deg",(app.usr_geodetic.get_y() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
+            Span::styled(format!("{:.5} deg",(el_az.get_y() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
         ])
     ];
 
@@ -434,14 +440,6 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     ctx.print(-90.0, 0.0, "E");
 
 
-    // Draw sat
-    let sat_geodetic = app.sat.get_geodetic_position();
-
-    let usr_ecef = app.usr_geodetic.geodetic_to_ecef();
-    let sat_ecef = sat_geodetic.geodetic_to_ecef();
-    
-    let p_enu = PositionVector::ecef_to_enu(&usr_ecef, &sat_ecef);
-    
     // ctx.layer();
  
     // let v = app.sat.get_points().iter().map(|&x| test(x)).collect::<Vec<_>>();
@@ -452,17 +450,14 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     // });
     ctx.layer();
 
-    // Get azimuth and elevation
-    let p_module = (p_enu.get_x().powi(2) + p_enu.get_y().powi(2) + p_enu.get_z().powi(2)).sqrt();
-    let p_enu_normalized = PositionVector::new(p_enu.get_x() / p_module, p_enu.get_y() / p_module, p_enu.get_z() / p_module);
-
-    let p_spheric = PositionVector::new(p_enu.get_x().atan2(p_enu.get_y()),  p_enu.get_z().asin(), 0.0);
+    // Get Elevation and Azimuth
+    let el_az = get_azimuth_and_elevation(&app.usr_geodetic, &app.sat.get_geodetic_position());
     
-    let p = 90.0 - (p_spheric.get_y()*(180.0/core::f64::consts::PI));
+    let p = 90.0 - (el_az.get_x()*(180.0/core::f64::consts::PI));
 
     ctx.draw(&Circle {
-        x: -p*p_spheric.get_x().sin(),
-        y: p*p_spheric.get_x().cos(),
+        x: -p*el_az.get_y().sin(),
+        y: p*el_az.get_y().cos(),
         radius: 5.0,
         color: Color::Blue,
     });
@@ -524,3 +519,12 @@ fn show_messages(frame: &mut Frame, app: &mut App){
     
 }
 
+fn get_azimuth_and_elevation(usr_geodetic: &PositionVector, sat_geodetic: &PositionVector) -> PositionVector {
+    // Get Elevation and Azimuth
+    let usr_ecef = usr_geodetic.geodetic_to_ecef();
+    let sat_ecef = sat_geodetic.geodetic_to_ecef();
+    
+    let p_enu = PositionVector::ecef_to_enu(&usr_ecef, &sat_ecef);
+    
+    p_enu.enu_to_azimuth_and_elevation()
+}

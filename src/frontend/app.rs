@@ -118,18 +118,28 @@ impl<T> StatefulList<T> where T : Clone {
         self.state.select(Some(i));
         &self.items[i]
     }
+
+    pub fn get_selected(&self) -> &T {
+        let i = match self.state.selected() {
+            Some(i) => {
+                i
+            }
+            None => 0,
+        };
+        &self.items[i]
+    }
 }
 
 pub struct App<'a> {  // TODO: Make em private
     pub title: &'a str,
-    pub sat: Satellite,
+    pub sat: Option<Satellite>,
+    pub tle_list: StatefulList<String>,
     pub tabs: TabsState<'a>,
     pub should_quit: bool,
     pub usr_geodetic: PositionVector,
     pub input_mode: bool,
     pub buffer: String,
-    messages: Vec<Message>,
-    pub tle_list: StatefulList<String>
+    messages: Vec<Message>
 }   
 
 impl<'a> App<'a> {
@@ -140,18 +150,17 @@ impl<'a> App<'a> {
     const INPUT_ARG_ERROR: &'static str = "Invalid number of arguments";
     const INPUT_TYPE_ERROR: &'static str = "Invalid type";
 
-    pub fn new(title: &'a str, sat: Satellite) -> Self {
-
+    pub fn new(title: &'a str) -> Self {
         Self {
             title,
-            sat,
+            sat: None,
+            tle_list: StatefulList::new(Self::get_tle_files()),
             tabs: TabsState::new(vec!["Map Projection", "Azimuthal Projection", "About"]),
             should_quit: false,
             usr_geodetic: PositionVector::new(Self::DEF_LAT, Self::DEF_LON, 0.0),
             input_mode: false,
             buffer: String::new(),
             messages: Vec::new(),
-            tle_list: StatefulList::new(Self::get_tle_files())
         }
     }
 
@@ -163,6 +172,10 @@ impl<'a> App<'a> {
 
     fn push_message(&mut self, msg: Message) {
         self.messages.push(msg);
+    }
+
+    pub fn get_sat(&self) -> &Satellite {
+        &self.sat
     }
 
     pub fn get_messages(&self) -> &Vec<Message> {
