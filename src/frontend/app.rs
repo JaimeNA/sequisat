@@ -4,7 +4,7 @@ use crate::PositionVector;
 
 use ratatui::{
     crossterm::event::KeyCode,
-    widgets::{List, ListItem}
+    widgets::ListState
 };
 
 use std::{
@@ -52,13 +52,13 @@ impl Message {
     }
 }
 
-pub struct SelectionList<> {
-    pub titles: Vec<String>,
+pub struct TabsState<'a> {
+    pub titles: Vec<&'a str>,
     pub index: usize,
 }
 
-impl<> SelectionList<> {
-    pub const fn new(titles: Vec<String>) -> Self {
+impl<'a> TabsState<'a> {
+    pub const fn new(titles: Vec<&'a str>) -> Self {
         Self { titles, index: 0 }
     }
     pub fn next(&mut self) {
@@ -74,16 +74,62 @@ impl<> SelectionList<> {
     }
 }
 
+// Struct taken from the examples in the ratatui repository
+pub struct StatefulList<T> {
+    pub state: ListState,
+    pub items: Vec<T>
+}
+
+impl<T> StatefulList<T> where T : Clone {
+    pub fn new(items: Vec<T>) -> Self {
+        Self {
+            state: ListState::default().with_selected(Some(0)),
+            items,
+        }
+    }
+
+    pub fn next(&mut self) -> &T{
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+        
+        &self.items[i]
+    }
+
+    pub fn previous(&mut self) -> &T {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+        &self.items[i]
+    }
+}
+
 pub struct App<'a> {  // TODO: Make em private
     pub title: &'a str,
     pub sat: Satellite,
-    pub tabs: SelectionList,
+    pub tabs: TabsState<'a>,
     pub should_quit: bool,
     pub usr_geodetic: PositionVector,
     pub input_mode: bool,
     pub buffer: String,
     messages: Vec<Message>,
-    pub tle_options: SelectionList
+    pub tle_list: StatefulList<String>
 }   
 
 impl<'a> App<'a> {
@@ -98,15 +144,14 @@ impl<'a> App<'a> {
 
         Self {
             title,
-            sat, // TODO: Check for better ways to declare tabs
-            tabs: SelectionList::new(vec!["Map Projection".to_string(), "Azimuthal Projection".to_string(), "About".to_string()]),
+            sat,
+            tabs: TabsState::new(vec!["Map Projection", "Azimuthal Projection", "About"]),
             should_quit: false,
             usr_geodetic: PositionVector::new(Self::DEF_LAT, Self::DEF_LON, 0.0),
             input_mode: false,
             buffer: String::new(),
             messages: Vec::new(),
-
-            tle_options: SelectionList::new(Self::get_tle_files()) // EXPERIMENTAL
+            tle_list: StatefulList::new(Self::get_tle_files())
         }
     }
 
@@ -125,11 +170,11 @@ impl<'a> App<'a> {
     }
 
     pub fn on_up(&mut self) {
-        //self.tasks.previous();
+        self.sat = Satellite::new(self.tle_list.previous());
     }
 
     pub fn on_down(&mut self) {
-        //self.tasks.next();
+        self.sat = Satellite::new(self.tle_list.next());
     }
 
     pub fn on_right(&mut self) {

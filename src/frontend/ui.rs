@@ -23,6 +23,7 @@ const DARK_RED: Color = Color::Rgb(150, 24, 16);
 const DARK_BLUE: Color = Color::Rgb(16, 24, 48);
 const AMBER: Color = Color::Rgb(255, 191, 0);
 const GRAY: Color = Color::Rgb(50, 50, 50);
+const LIGHT_GRAY: Color = Color::Rgb(150, 150, 150);
 const WHITE: Color = Color::Rgb(238, 238, 238); // not really white, often #eeeeee
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -80,7 +81,7 @@ fn draw_title_bar(frame: &mut Frame, app: &mut App, area: Rect)
         .tabs
         .titles
         .iter()
-        .map(|t| text::Line::from(Span::styled(t, Style::default().fg(Color::Green))))
+        .map(|t| text::Line::from(Span::styled(*t, Style::default().fg(Color::Green))))
         .collect::<Tabs>()
         .divider("|")
         .padding("", "")
@@ -451,14 +452,12 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     // });
     ctx.layer();
 
+    // Get azimuth and elevation
     let p_module = (p_enu.get_x().powi(2) + p_enu.get_y().powi(2) + p_enu.get_z().powi(2)).sqrt();
     let p_enu_normalized = PositionVector::new(p_enu.get_x() / p_module, p_enu.get_y() / p_module, p_enu.get_z() / p_module);
 
     let p_spheric = PositionVector::new(p_enu.get_x().atan2(p_enu.get_y()),  p_enu.get_z().asin(), 0.0);
     
-    ctx.print(100.0, 0.0, format!("Elevation: {:.5}", p_spheric.get_y()*(180.0/core::f64::consts::PI)));
-    ctx.print(100.0, -10.0, format!("Azimuth: {:.5}", p_spheric.get_x()*(180.0/core::f64::consts::PI)));
-
     let p = 90.0 - (p_spheric.get_y()*(180.0/core::f64::consts::PI));
 
     ctx.draw(&Circle {
@@ -476,20 +475,21 @@ fn draw_tle_options(frame: &mut Frame, app: &mut App, area: Rect)
         .title(title)
         .borders(Borders::ALL);
 
-    let mut state = ListState::default();   // Experimental
-    state.select(Some(app.tle_options.index));
 
-    let list = List::new(app.tle_options.titles.clone())
+    let list = List::new(app.tle_list.items.clone())
         .block(block)
         .style(Style::new().white())
-        .highlight_style(Style::new().italic())
-        .highlight_symbol(">>")
-        .repeat_highlight_symbol(true)
-        .direction(ListDirection::BottomToTop);
+        .highlight_style(Style::new()
+            .fg(LIGHT_GRAY)
+            .bg(DARK_BLUE)
+            .add_modifier(Modifier::BOLD)
+            .add_modifier(Modifier::REVERSED))
+        .highlight_symbol(">> ")
+        .repeat_highlight_symbol(true);
     
     
     frame.render_widget(Clear, area);  
-    frame.render_stateful_widget(list, area, &mut state); 
+    frame.render_stateful_widget(list, area, &mut app.tle_list.state); 
     
     
 }

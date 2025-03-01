@@ -127,6 +127,8 @@ impl PositionVector {
         return p_enu.clone(); // (e, n, u)
     }
 
+    pub fn enu_to_stereographc
+
     // Computes the prime vertical radius of curvature
     fn prime_vertical_radius(&self, latitude: f64) -> f64
     {
