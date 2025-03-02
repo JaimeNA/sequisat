@@ -1,6 +1,7 @@
 use crate::App;
 
 use crate::PositionVector;
+use crate::Satellite;
 use crate::frontend::app::MessageType;
 
 use ratatui::{
@@ -37,12 +38,12 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     draw_title_bar(frame, app, title_bar);
 
     // Don't draw anything if there is no satellite
-    if app.get_sat().is_some() {
+    if let Some(sat) = app.get_sat() { 
         // Draw the selected tab
         match app.tabs.index {
-            0 => draw_map_tab(frame, app, tab),
-            1 => draw_azimuth_tab(frame, app, tab),
-            2 => draw_about_tab(frame, app, tab),
+            0 => draw_map_tab(frame, sat, app, tab),
+            1 => draw_azimuth_tab(frame, sat, app, tab),
+            2 => draw_about_tab(frame, sat, app, tab),
             _ => {}
         };
     }
@@ -101,7 +102,7 @@ fn draw_title_bar(frame: &mut Frame, app: &mut App, area: Rect)
 
 // Main tabs 
 
-fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
+fn draw_map_tab(frame: &mut Frame, sat: &Satellite, app: &mut App, area: Rect)
 {
     let chunks = Layout::default()
          .direction(Direction::Horizontal)
@@ -115,7 +116,7 @@ fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
  
      let map = Canvas::default()
          .block(Block::default().title("World").borders(Borders::ALL))
-         .paint(|ctx| paint_map(ctx, app))
+         .paint(|ctx| paint_map(ctx, sat, app))
          .marker(symbols::Marker::Braille)
          .x_bounds([-180.0, 180.0])
          .y_bounds([-90.0, 90.0]);
@@ -131,12 +132,12 @@ fn draw_map_tab(frame: &mut Frame, app: &mut App, area: Rect)
              ].as_ref()
          )
          .split(chunks[1]);
-    draw_sat_coords(frame, app, chunklin[0]);
+    draw_sat_coords(frame, sat, chunklin[0]);
     //draw_user_coords(frame, app, chunklin[1]);
     draw_tle_options(frame, app, chunklin[1]);
 }
 
-fn draw_azimuth_tab(frame: &mut Frame, app: &mut App, area: Rect)
+fn draw_azimuth_tab(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
 {
 
     let chunks = Layout::default()
@@ -151,18 +152,18 @@ fn draw_azimuth_tab(frame: &mut Frame, app: &mut App, area: Rect)
 
     let map = Canvas::default()
     .block(Block::default().title("Azimuth").borders(Borders::ALL))
-    .paint(|ctx| paint_azimuth(ctx, app))
+    .paint(|ctx| paint_azimuth(ctx, sat, app))
     .marker(symbols::Marker::Braille)
     .x_bounds([-180.0, 180.0])
     .y_bounds([-180.0, 180.0]);
 
     frame.render_widget(map, chunks[0]);    
 
-    draw_stereographic_coords(frame, app, chunks[1]);   
+    draw_stereographic_coords(frame, sat, app, chunks[1]);   
 }
 
 
-fn draw_about_tab(frame: &mut Frame, app: &mut App, area: Rect)
+fn draw_about_tab(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
 {
     let chunks = Layout::default()
          .direction(Direction::Vertical)
@@ -184,7 +185,7 @@ fn draw_about_tab(frame: &mut Frame, app: &mut App, area: Rect)
          )
          .split(chunks[0]);
 
-    draw_tle_data(frame, app, chunklin[0]);
+    draw_tle_data(frame, sat, chunklin[0]);
     draw_user_coords(frame, app, chunklin[1]);
 
     let text = vec![
@@ -205,7 +206,7 @@ fn draw_about_tab(frame: &mut Frame, app: &mut App, area: Rect)
 
 // Blocks
 
- fn paint_map(ctx: &mut Context, app: &App)
+ fn paint_map(ctx: &mut Context, sat: &Satellite, app: &App)
  {
      
      ctx.draw(&Map {
@@ -225,28 +226,28 @@ fn draw_about_tab(frame: &mut Frame, app: &mut App, area: Rect)
      ctx.layer();
  
      ctx.draw(&Points {
-         coords: app.sat.get_points(),
+         coords: sat.get_points(),
          color: Color::Green
      });
 
      ctx.layer();    // Go one layer above
                      //
      ctx.draw(&Circle {
-         x: (app.sat.get_geodetic_position().get_y()* 180.0/3.14159),
-         y: (app.sat.get_geodetic_position().get_x()* 180.0/3.14159),
+         x: (sat.get_geodetic_position().get_y()* 180.0/3.14159),
+         y: (sat.get_geodetic_position().get_x()* 180.0/3.14159),
          radius: 5.0,
          color: Color::Yellow,
      });
  }
 
-fn draw_stereographic_coords(frame: &mut Frame, app: &mut App, area: Rect)
+fn draw_stereographic_coords(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
 {
     let position_data = Block::default()
     .title("Stereographic Coordinates")
     .borders(Borders::ALL);
 
     // Get Elevation and Azimuth
-    let el_az = get_azimuth_and_elevation(&app.usr_geodetic, &app.sat.get_geodetic_position());
+    let el_az = get_azimuth_and_elevation(&app.usr_geodetic, &sat.get_geodetic_position());
 
     let text = vec![
         text::Line::from(vec![
@@ -266,7 +267,7 @@ fn draw_stereographic_coords(frame: &mut Frame, app: &mut App, area: Rect)
     frame.render_widget(data, area);   
 }
 
-fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
+fn draw_user_coords(frame: &mut Frame, app: &App, area: Rect)
 {
     let position_data = Block::default()
     .title("User Coordinates")
@@ -294,109 +295,108 @@ fn draw_user_coords(frame: &mut Frame, app: &mut App, area: Rect)
     frame.render_widget(data, area);   
 }
 
- fn draw_sat_coords(frame: &mut Frame, app: &mut App, area: Rect) // Repeated code, fix later
- {
-     let position_data = Block::default()
-         .title("Satellite Coordinates")
-         .borders(Borders::ALL);
+fn draw_sat_coords(frame: &mut Frame, sat: &Satellite, area: Rect) // Repeated code, fix later
+{
+    let position_data = Block::default()
+        .title("Satellite Coordinates")
+        .borders(Borders::ALL);
  
-     let text = vec![
-         text::Line::from(vec![
-             Span::from("Altitude: "),
-             Span::styled(format!("{:.5} km", app.sat.get_geodetic_position().get_z().to_string()), Style::default().fg(Color::Red)),
-         ]),
-         text::Line::from(vec![
-             Span::from("Longitude: "),
-             Span::styled(format!("{:.5} deg", (app.sat.get_geodetic_position().get_y() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
-         ]),
-         text::Line::from(vec![
-             Span::from("Latitude: "),
-             Span::styled(format!("{:.5} deg", (app.sat.get_geodetic_position().get_x() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
-         ])
-     ];
+    let text = vec![
+        text::Line::from(vec![
+            Span::from("Altitude: "),
+            Span::styled(format!("{:.5} km", sat.get_geodetic_position().get_z().to_string()), Style::default().fg(Color::Red)),
+        ]),
+        text::Line::from(vec![
+            Span::from("Longitude: "),
+            Span::styled(format!("{:.5} deg", (sat.get_geodetic_position().get_y() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
+        ]),
+        text::Line::from(vec![
+            Span::from("Latitude: "),
+            Span::styled(format!("{:.5} deg", (sat.get_geodetic_position().get_x() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
+        ])
+    ];
  
-     let data = Paragraph::new(text)
-         .block(position_data)
-         .style(Style::default().fg(Color::White));
+    let data = Paragraph::new(text)
+        .block(position_data)
+        .style(Style::default().fg(Color::White));
  
-     frame.render_widget(data, area); 
- }
+    frame.render_widget(data, area); 
+}
 
- fn draw_tle_data(frame: &mut Frame, app: &mut App, area: Rect)
- {
-     let tle_data = Block::default()
-         .title("TLE Data")
-         .borders(Borders::ALL);
+fn draw_tle_data(frame: &mut Frame, sat: &Satellite, area: Rect)
+{
+    let tle_data = Block::default()
+        .title("TLE Data")
+        .borders(Borders::ALL);
  
-     let text = vec![
-         text::Line::from(vec![
-             Span::from("Satellite Catalog Number: "),
-             Span::styled(app.sat.get_tle().get_catalog_number().to_string(), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+    let text = vec![
+        text::Line::from(vec![
+            Span::from("Satellite Catalog Number: "),
+            Span::styled(sat.get_tle().get_catalog_number().to_string(), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Classification: "),
-            Span::styled(app.sat.get_tle().get_classification(), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+            Span::styled(sat.get_tle().get_classification(), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Launch Year: "),
-            Span::styled(app.sat.get_tle().get_launch_year().to_string(), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+            Span::styled(sat.get_tle().get_launch_year().to_string(), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Launch Piece: "),
-            Span::styled(app.sat.get_tle().get_launch_piece().to_string(), Style::default().fg(Color::Yellow)),
-         ]),
-         // TODO: change color of smth to mark them as different
-         text::Line::from(vec![
+            Span::styled(sat.get_tle().get_launch_piece().to_string(), Style::default().fg(Color::Yellow)),
+        ]),
+        // TODO: change color of smth to mark them as different
+        text::Line::from(vec![
             Span::from("Epoch Year: "),
-            Span::styled(app.sat.get_tle().get_epoch_year().to_string(), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+            Span::styled(sat.get_tle().get_epoch_year().to_string(), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Epoch Day of Year: "),
-            Span::styled(format!("{:.5}", app.sat.get_tle().get_epoch_day().to_string()), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+            Span::styled(format!("{:.5}", sat.get_tle().get_epoch_day().to_string()), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Ballistic Coefficient: "),
-            Span::styled(format!("{:.10}", app.sat.get_tle().get_ballistic_coefficient()).to_string(), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+            Span::styled(format!("{:.10}", sat.get_tle().get_ballistic_coefficient()).to_string(), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Drag Term: "),
-            Span::styled(format!("{:.10}", app.sat.get_tle().get_drag_term().to_string()), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+            Span::styled(format!("{:.10}", sat.get_tle().get_drag_term().to_string()), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Inclination(rads): "),
-            Span::styled(format!("{:.5}", app.sat.get_tle().get_inclination().to_string()), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+            Span::styled(format!("{:.5}", sat.get_tle().get_inclination().to_string()), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Right Ascension(rads): "),
-            Span::styled(format!("{:.5}", app.sat.get_tle().get_right_ascension().to_string()), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+            Span::styled(format!("{:.5}", sat.get_tle().get_right_ascension().to_string()), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Eccentricity: "),
-            Span::styled(format!("{:.5}", app.sat.get_tle().get_eccetricity().to_string()), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+            Span::styled(format!("{:.5}", sat.get_tle().get_eccetricity().to_string()), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Argument of Perigee(rads): "),
-            Span::styled(format!("{:.5}", app.sat.get_tle().get_argument_of_perigee().to_string()), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+            Span::styled(format!("{:.5}", sat.get_tle().get_argument_of_perigee().to_string()), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Mean Anomaly(rads): "),
-            Span::styled(format!("{:.5}", app.sat.get_tle().get_mean_anomaly().to_string()), Style::default().fg(Color::Yellow)),
-         ]),
-         text::Line::from(vec![
+            Span::styled(format!("{:.5}", sat.get_tle().get_mean_anomaly().to_string()), Style::default().fg(Color::Yellow)),
+        ]),
+        text::Line::from(vec![
             Span::from("Mean Motion(rads/min): "),
-            Span::styled(format!("{:.5}", app.sat.get_tle().get_mean_motion().to_string()), Style::default().fg(Color::Yellow)),
-         ]),
-     ];
+            Span::styled(format!("{:.5}", sat.get_tle().get_mean_motion().to_string()), Style::default().fg(Color::Yellow)),
+        ]),
+    ];
  
-     let data = Paragraph::new(text)
-         .block(tle_data)
-         .style(Style::default().fg(Color::White));
+    let data = Paragraph::new(text)
+        .block(tle_data)
+        .style(Style::default().fg(Color::White));
  
-     frame.render_widget(data, area); 
- }
+    frame.render_widget(data, area); 
+}
 
-
-fn paint_azimuth(ctx: &mut Context, app: &App)
+fn paint_azimuth(ctx: &mut Context, sat: &Satellite, app: &App)
 {
 
     // draw grid<
@@ -442,7 +442,7 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
 
     // ctx.layer();
  
-    // let v = app.sat.get_points().iter().map(|&x| test(x)).collect::<Vec<_>>();
+    // let v = app.get_sat().get_points().iter().map(|&x| test(x)).collect::<Vec<_>>();
 
     // ctx.draw(&Points {
     //     coords: &v,
@@ -451,7 +451,7 @@ fn paint_azimuth(ctx: &mut Context, app: &App)
     ctx.layer();
 
     // Get Elevation and Azimuth
-    let el_az = get_azimuth_and_elevation(&app.usr_geodetic, &app.sat.get_geodetic_position());
+    let el_az = get_azimuth_and_elevation(&app.usr_geodetic, &sat.get_geodetic_position());
     
     let p = 90.0 - (el_az.get_x()*(180.0/core::f64::consts::PI));
 

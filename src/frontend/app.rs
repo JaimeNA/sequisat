@@ -173,9 +173,12 @@ impl<'a> App<'a> {
     fn push_message(&mut self, msg: Message) {
         self.messages.push(msg);
     }
+    pub fn get_sat(&self) -> Option<&Satellite> {
+        self.sat.as_ref()
+    }
 
-    pub fn get_sat(&self) -> &Satellite {
-        &self.sat
+    pub fn get_usr_geodetic(&self) -> &PositionVector {
+        &self.usr_geodetic
     }
 
     pub fn get_messages(&self) -> &Vec<Message> {
@@ -183,11 +186,11 @@ impl<'a> App<'a> {
     }
 
     pub fn on_up(&mut self) {
-        self.sat = Satellite::new(self.tle_list.previous());
+        self.sat = Some(Satellite::new(self.tle_list.previous()));
     }
 
     pub fn on_down(&mut self) {
-        self.sat = Satellite::new(self.tle_list.next());
+        self.sat = Some(Satellite::new(self.tle_list.next()));
     }
 
     pub fn on_right(&mut self) {
@@ -307,8 +310,10 @@ impl<'a> App<'a> {
     }
 
     pub fn on_tick(&mut self) {
-        self.sat.get_trajectory();
-        self.sat.update_position();
+        if let Some(ref mut sat) = &mut self.sat {
+            sat.get_trajectory();
+            sat.update_position();
+        }
     }
     
 }
