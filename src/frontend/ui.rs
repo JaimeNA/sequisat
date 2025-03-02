@@ -15,6 +15,8 @@ use ratatui::{
     Frame
 };
 
+use std::cell::RefCell;
+
 const USAGE: &str = "c - Set user Coordinates | Enter - Clear popups | q - Quit";
 
 const POPUP_WIDTH: u16 = 55;
@@ -71,7 +73,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     show_messages(frame, app);
 }
 
-fn draw_title_bar(frame: &mut Frame, app: &mut App, area: Rect)
+fn draw_title_bar(frame: &mut Frame, app: &App, area: Rect)
 {
     let layout = Layout::horizontal([Constraint::Min(0), Constraint::Length(43)]);
     let [title_area, tabs_area] = layout.areas(area);
@@ -102,7 +104,7 @@ fn draw_title_bar(frame: &mut Frame, app: &mut App, area: Rect)
 
 // Main tabs 
 
-fn draw_map_tab(frame: &mut Frame, sat: &Satellite, app: &mut App, area: Rect)
+fn draw_map_tab(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
 {
     let chunks = Layout::default()
          .direction(Direction::Horizontal)
@@ -206,39 +208,39 @@ fn draw_about_tab(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
 
 // Blocks
 
- fn paint_map(ctx: &mut Context, sat: &Satellite, app: &App)
- {
+fn paint_map(ctx: &mut Context, sat: &Satellite, app: &App)
+{
      
-     ctx.draw(&Map {
-         color: Color::White,
-         resolution: MapResolution::High,
-     });
+    ctx.draw(&Map {
+        color: Color::White,
+        resolution: MapResolution::High,
+    });
 
-     ctx.layer();    
+    ctx.layer();    
      
-     ctx.draw(&Circle {
-         x: app.usr_geodetic.get_y() * (180.0/core::f64::consts::PI),
-         y: app.usr_geodetic.get_x() * (180.0/core::f64::consts::PI),
-         radius: 1.0,
-         color: Color::Red,
-     });
+    ctx.draw(&Circle {
+        x: app.usr_geodetic.get_y() * (180.0/core::f64::consts::PI),
+        y: app.usr_geodetic.get_x() * (180.0/core::f64::consts::PI),
+        radius: 1.0,
+        color: Color::Red,
+    });
  
-     ctx.layer();
+    ctx.layer();
  
-     ctx.draw(&Points {
-         coords: sat.get_points(),
-         color: Color::Green
-     });
+    ctx.draw(&Points {
+        coords: sat.get_points(),
+        color: Color::Green
+    });
 
-     ctx.layer();    // Go one layer above
+    ctx.layer();    // Go one layer above
                      //
-     ctx.draw(&Circle {
-         x: (sat.get_geodetic_position().get_y()* 180.0/3.14159),
-         y: (sat.get_geodetic_position().get_x()* 180.0/3.14159),
-         radius: 5.0,
-         color: Color::Yellow,
-     });
- }
+    ctx.draw(&Circle {
+        x: (sat.get_geodetic_position().get_y()* 180.0/3.14159),
+        y: (sat.get_geodetic_position().get_x()* 180.0/3.14159),
+        radius: 5.0,
+        color: Color::Yellow,
+    });
+}
 
 fn draw_stereographic_coords(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
 {
@@ -463,7 +465,7 @@ fn paint_azimuth(ctx: &mut Context, sat: &Satellite, app: &App)
     });
 }
 
-fn draw_tle_options(frame: &mut Frame, app: &mut App, area: Rect)
+fn draw_tle_options(frame: &mut Frame, app: &App, area: Rect)
 {
     let title = "TLE Options";
     let block = Block::default()
@@ -482,14 +484,13 @@ fn draw_tle_options(frame: &mut Frame, app: &mut App, area: Rect)
         .highlight_symbol(">> ")
         .repeat_highlight_symbol(true);
     
-    
     frame.render_widget(Clear, area);  
-    frame.render_stateful_widget(list, area, &mut app.tle_list.state); 
+    frame.render_stateful_widget(list, area, &mut app.tle_list.state.borrow_mut()); 
     
     
 }
 
-fn show_messages(frame: &mut Frame, app: &mut App){
+fn show_messages(frame: &mut Frame, app: &App){
 
     let area = Rect::new(0, 0, POPUP_WIDTH, POPUP_HEIGHT).clamp(frame.area());
 

@@ -9,7 +9,8 @@ use ratatui::{
 
 use std::{
     fs,
-    fs::ReadDir
+    fs::ReadDir,
+    cell::RefCell
 };
 
 pub enum MessageType {
@@ -76,20 +77,20 @@ impl<'a> TabsState<'a> {
 
 // Struct taken from the examples in the ratatui repository
 pub struct StatefulList<T> {
-    pub state: ListState,
+    pub state: RefCell<ListState>, // render_stateful_widget need it to be mutable
     pub items: Vec<T>
 }
 
 impl<T> StatefulList<T> where T : Clone {
     pub fn new(items: Vec<T>) -> Self {
         Self {
-            state: ListState::default().with_selected(Some(0)),
+            state: RefCell::new(ListState::default().with_selected(Some(0))),
             items,
         }
     }
 
     pub fn next(&mut self) -> &T{
-        let i = match self.state.selected() {
+        let i = match self.state.borrow().selected() {
             Some(i) => {
                 if i >= self.items.len() - 1 {
                     0
@@ -99,13 +100,13 @@ impl<T> StatefulList<T> where T : Clone {
             }
             None => 0,
         };
-        self.state.select(Some(i));
+        self.state.borrow_mut().select(Some(i));
         
         &self.items[i]
     }
 
     pub fn previous(&mut self) -> &T {
-        let i = match self.state.selected() {
+        let i = match self.state.borrow().selected() {
             Some(i) => {
                 if i == 0 {
                     self.items.len() - 1
@@ -115,12 +116,12 @@ impl<T> StatefulList<T> where T : Clone {
             }
             None => 0,
         };
-        self.state.select(Some(i));
+        self.state.borrow_mut().select(Some(i));
         &self.items[i]
     }
 
     pub fn get_selected(&self) -> &T {
-        let i = match self.state.selected() {
+        let i = match self.state.borrow().selected() {
             Some(i) => {
                 i
             }
