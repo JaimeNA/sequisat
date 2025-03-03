@@ -9,7 +9,6 @@ use ratatui::{
 
 use std::{
     fs,
-    fs::ReadDir,
     cell::RefCell
 };
 
@@ -117,16 +116,6 @@ impl<T> StatefulList<T> where T : Clone {
             None => 0,
         };
         self.state.borrow_mut().select(Some(i));
-        &self.items[i]
-    }
-
-    pub fn get_selected(&self) -> &T {
-        let i = match self.state.borrow().selected() {
-            Some(i) => {
-                i
-            }
-            None => 0,
-        };
         &self.items[i]
     }
 }

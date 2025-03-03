@@ -129,13 +129,7 @@ impl PositionVector {
 
     pub fn enu_to_azimuth_and_elevation(&self) -> PositionVector {
         // https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
-
-        let p_module = (self.get_x().powi(2) + self.get_y().powi(2) + self.get_z().powi(2)).sqrt();
-        let p_enu_normalized = PositionVector::new(self.get_x() / p_module, self.get_y() / p_module, self.get_z() / p_module);
-
-        let p_spheric = PositionVector::new(self.get_x().atan2(self.get_y()),  self.get_z().asin(), 0.0);
-        
-        PositionVector::new(p_spheric.get_x(), p_spheric.get_y(), 0.0) // (a, e, -)
+        PositionVector::new(self.get_x().atan2(self.get_y()), self.get_z().asin(), 0.0) // (a, e, -)
     }
 
     // Computes the prime vertical radius of curvature

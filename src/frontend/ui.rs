@@ -6,7 +6,7 @@ use crate::frontend::app::MessageType;
 
 use ratatui::{
     style::{Style, Color, Modifier},
-    widgets::{Borders, Block, Paragraph, Tabs, Clear, List, ListDirection, ListState},
+    widgets::{Borders, Block, Paragraph, Tabs, Clear, List},
     widgets::canvas::{Canvas, Points, Circle, Line, MapResolution, Map, Context},
     prelude::{Constraint, Rect, Direction, Layout, Stylize},
     text::Span,
@@ -14,8 +14,6 @@ use ratatui::{
     text,
     Frame
 };
-
-use std::cell::RefCell;
 
 const USAGE: &str = "c - Set user Coordinates | Enter - Clear popups | q - Quit";
 
@@ -35,7 +33,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         Constraint::Min(0),
         Constraint::Length(1),
     ]);
-    let [title_bar, tab, bottom_bar] = vertical.areas(frame.area());
+    let [title_bar, tab, bottom_bar] = vertical.areas(frame.area()); // TODO: Do something with
+                                                                     // bottom_bar
  
     draw_title_bar(frame, app, title_bar);
 
@@ -219,8 +218,8 @@ fn paint_map(ctx: &mut Context, sat: &Satellite, app: &App)
     ctx.layer();    
      
     ctx.draw(&Circle {
-        x: app.usr_geodetic.get_y() * (180.0/core::f64::consts::PI),
-        y: app.usr_geodetic.get_x() * (180.0/core::f64::consts::PI),
+        x: app.get_usr_geodetic().get_y() * (180.0/core::f64::consts::PI),
+        y: app.get_usr_geodetic().get_x() * (180.0/core::f64::consts::PI),
         radius: 1.0,
         color: Color::Red,
     });
@@ -249,7 +248,7 @@ fn draw_stereographic_coords(frame: &mut Frame, sat: &Satellite, app: &App, area
     .borders(Borders::ALL);
 
     // Get Elevation and Azimuth
-    let el_az = get_azimuth_and_elevation(&app.usr_geodetic, &sat.get_geodetic_position());
+    let el_az = get_azimuth_and_elevation(&app.get_usr_geodetic(), &sat.get_geodetic_position());
 
     let text = vec![
         text::Line::from(vec![
@@ -278,15 +277,15 @@ fn draw_user_coords(frame: &mut Frame, app: &App, area: Rect)
     let text = vec![
         text::Line::from(vec![
             Span::from("Latitude: "),
-            Span::styled(format!("{:.5} deg", (app.usr_geodetic.get_x() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
+            Span::styled(format!("{:.5} deg", (app.get_usr_geodetic().get_x() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Blue)),
         ]),
         text::Line::from(vec![
             Span::from("Longitude: "),
-            Span::styled(format!("{:.5} deg",(app.usr_geodetic.get_y() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
+            Span::styled(format!("{:.5} deg",(app.get_usr_geodetic().get_y() * (180.0/core::f64::consts::PI)).to_string()), Style::default().fg(Color::Green)),
         ]),
         text::Line::from(vec![
             Span::from("Altitude: "),
-            Span::styled(format!("{:.5} km", app.usr_geodetic.get_z().to_string()), Style::default().fg(Color::Red)),
+            Span::styled(format!("{:.5} km", app.get_usr_geodetic().get_z().to_string()), Style::default().fg(Color::Red)),
         ])
     ];
 
@@ -453,13 +452,13 @@ fn paint_azimuth(ctx: &mut Context, sat: &Satellite, app: &App)
     ctx.layer();
 
     // Get Elevation and Azimuth
-    let el_az = get_azimuth_and_elevation(&app.usr_geodetic, &sat.get_geodetic_position());
+    let el_az = get_azimuth_and_elevation(&app.get_usr_geodetic(), &sat.get_geodetic_position());
     
-    let p = 90.0 - (el_az.get_x()*(180.0/core::f64::consts::PI));
+    let p = 90.0 - (el_az.get_y()*(180.0/core::f64::consts::PI));
 
     ctx.draw(&Circle {
-        x: -p*el_az.get_y().sin(),
-        y: p*el_az.get_y().cos(),
+        x: -p*el_az.get_x().sin(),
+        y: p*el_az.get_x().cos(),
         radius: 5.0,
         color: Color::Blue,
     });
@@ -501,7 +500,6 @@ fn show_messages(frame: &mut Frame, app: &App){
             MessageType::Error => DARK_RED,
             MessageType::Warning => AMBER,
             MessageType::Info => GRAY,
-            _ => Color::White
         };
 
         let title = format!("Message {}: {}", app.get_messages().len(), msg.get_type().name());

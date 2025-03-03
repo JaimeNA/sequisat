@@ -13,7 +13,6 @@ use std::{
 
 use ratatui::{
     backend::Backend,
-    style::Color,
     crossterm::{
         event::{self, Event, KeyCode, KeyEventKind},
     },
@@ -65,14 +64,10 @@ fn run_app<B: Backend>(
             return Ok(());
         }
     }
-    Ok(())
 }
 
 fn main() -> io::Result<()> {
     
-    // Set the update interval (e.g., 1 second)
-    let update_interval = Duration::from_secs(1);
-
     let tick_rate: Duration = Duration::from_millis(100);
     
     run(tick_rate)?;
