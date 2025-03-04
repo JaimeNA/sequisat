@@ -18,22 +18,22 @@ pub struct Satellite
 
 impl Satellite
 {
-    pub fn new(tle_path: &str) -> Self
+    pub fn new(tle_path: &str) -> Result<Self, &str>
     {
-        let tle = TLE::new(tle_path);
+        let tle = TLE::new(tle_path)?;
         let orbit = Orbit::new(&tle);
         let mut propagator = SGP4::new(orbit);
 
         propagator.initialize();
 
-        Satellite
+        Ok(Satellite
         {
             propagator: Box::new(propagator),
             tle: tle,
             points: Vec::new(),
             coords_eci: PositionVector::new(0.0, 0.0, 0.0),
             gst: 0.0
-        }
+        })
     }
 
     pub fn print(&self)

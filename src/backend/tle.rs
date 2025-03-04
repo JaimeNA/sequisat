@@ -47,25 +47,28 @@ pub struct TLE {
 
 impl TLE
 {
-    pub fn new(file_path: &str) -> Self
+    const TLE_ERROR: &'static str = "ERROR::TLE: Invalid TLE format";
+    const TLE_PARSING_ERROR: &'static str = "ERROR::TLE: Unable to parse provided data";
+
+    pub fn new(file_path: &str) -> Result<Self, &str>
     {
-        let contents = fs::read_to_string(file_path)
-        .expect("Should have been able to read the file");
+        let contents = fs::read_to_string(file_path).expect("ww");
 
         let mut lines = contents.lines();
 
-        let mut current_line = lines.next().unwrap();
+        // Go to next, if an errors occur return the error
+        let mut current_line = lines.next().ok_or(Self::TLE_ERROR)?;
 
-        let mut columns = current_line.split_whitespace(); // TODO: Implements security checks
+        let mut columns = current_line.split_whitespace();
         columns.next();
 
         // ---------------- General Information ----------------
         // Catalog number
-        let mut current_column = columns.next().unwrap();
-        let catalog_number = (&current_column[..5]).parse::<i32>().unwrap();
+        let mut current_column = columns.next().ok_or(Self::TLE_ERROR)?;
+        let catalog_number = (&current_column[..5]).parse::<i32>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))?;
 
         // Classification 
-        let classification = match current_column.chars().nth(5).unwrap()
+        let classification = match current_column.chars().nth(5).ok_or(Self::TLE_ERROR)?
         {
             'U' =>  "Unclassified",
             'C' =>  "Classified",
@@ -74,10 +77,10 @@ impl TLE
         };
 
         // Launch year
-        current_column = columns.next().unwrap();
+        current_column = columns.next().ok_or(Self::TLE_ERROR)?;
         let year_str = &current_column[..2];
 
-        let mut launch_year = year_str.parse::<i32>().unwrap();
+        let mut launch_year = year_str.parse::<i32>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))?;
         if launch_year < 57
         {
             launch_year += 2000; 
@@ -88,15 +91,15 @@ impl TLE
         }
         
         // Launch piece
-        let launch_piece = current_column.chars().nth(5).unwrap();
+        let launch_piece = current_column.chars().nth(5).ok_or(Self::TLE_ERROR)?;
 
         // ---------------- Epoch Orbit Information ----------------
 
         // Epoch Year
-        current_column = columns.next().unwrap();
+        current_column = columns.next().ok_or(Self::TLE_ERROR)?;
         let year_str = &current_column[..2];
 
-        let mut epoch_year = year_str.parse::<i32>().unwrap();
+        let mut epoch_year = year_str.parse::<i32>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))?;
         if epoch_year < 57
         {
             epoch_year += 2000; 
@@ -108,18 +111,18 @@ impl TLE
 
         // Epoch Day of Year
         let day_str = &current_column[2..];
-        let epoch_day = day_str.parse::<f64>().unwrap(); // TODO: Error handling
+        let epoch_day = day_str.parse::<f64>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))?; // TODO: Error handling
 
         // Ballistic Coefficient
-        current_column = columns.next().unwrap();
-        let ballistic_coefficient = current_column.parse::<f64>().unwrap();
+        current_column = columns.next().ok_or(Self::TLE_ERROR)?;
+        let ballistic_coefficient = current_column.parse::<f64>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))?;
 
         // Drag Term
         columns.next(); // Second derivatice of mean motion
-        current_column = columns.next().unwrap();
+        current_column = columns.next().ok_or(Self::TLE_ERROR)?;
 
         let temp = {
-        if current_column.chars().nth(0).unwrap() == '-'
+        if current_column.chars().nth(0).ok_or(Self::TLE_ERROR)? == '-'
         {
             format!("-0.{}e{}", &current_column[1..6], &current_column[6..]) // Decimal point assumed
         }
@@ -127,41 +130,41 @@ impl TLE
         {
             format!("0.{}e{}", &current_column[0..5], &current_column[5..])
         }};
-        let drag_term = temp.parse::<f64>().unwrap();
+        let drag_term = temp.parse::<f64>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))?;
 
         // Inclination (radians)
-        current_line = lines.next().unwrap();
+        current_line = lines.next().ok_or(Self::TLE_ERROR)?;
         columns = current_line.split_whitespace();
 
         columns.next();                         // Line number
         columns.next();                         // Catalog number
 
-        current_column = columns.next().unwrap();
-        let inclination = (current_column.parse::<f64>().unwrap() * core::f64::consts::PI) / 180.0;
+        current_column = columns.next().ok_or(Self::TLE_ERROR)?;
+        let inclination = (current_column.parse::<f64>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))? * core::f64::consts::PI) / 180.0;
 
         // Right ascension (radians)
-        current_column = columns.next().unwrap();
-        let right_ascension = (current_column.parse::<f64>().unwrap() * core::f64::consts::PI) / 180.0;
+        current_column = columns.next().ok_or(Self::TLE_ERROR)?;
+        let right_ascension = (current_column.parse::<f64>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))? * core::f64::consts::PI) / 180.0;
 
         // Eccentricity
-        current_column = columns.next().unwrap();
+        current_column = columns.next().ok_or(Self::TLE_ERROR)?;
         let eccentricity_str = format!("0.{}", current_column);
-        let eccentricity = eccentricity_str.parse::<f64>().unwrap();
+        let eccentricity = eccentricity_str.parse::<f64>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))?;
 
         // Argument of Perigee
-        current_column = columns.next().unwrap();
-        let argument_of_perigee = (current_column.parse::<f64>().unwrap() * core::f64::consts::PI) / 180.0;
+        current_column = columns.next().ok_or(Self::TLE_ERROR)?;
+        let argument_of_perigee = (current_column.parse::<f64>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))? * core::f64::consts::PI) / 180.0;
 
         
         // Mean Anomaly (radians)
-        current_column = columns.next().unwrap();
-        let mean_anomaly = (current_column.parse::<f64>().unwrap() * core::f64::consts::PI) / 180.0;
+        current_column = columns.next().ok_or(Self::TLE_ERROR)?;
+        let mean_anomaly = (current_column.parse::<f64>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))? * core::f64::consts::PI) / 180.0;
 
         // Mean Motion (radians/min)
-        current_column = columns.next().unwrap();
-        let mean_motion = (current_column.parse::<f64>().unwrap() * 2.0*core::f64::consts::PI) / 1440.0;
+        current_column = columns.next().ok_or(Self::TLE_ERROR)?;
+        let mean_motion = (current_column.parse::<f64>().or_else(|e| return Err(Self::TLE_PARSING_ERROR))? * 2.0*core::f64::consts::PI) / 1440.0;
         
-        TLE{
+        Ok(TLE{
             catalog_number: catalog_number,
             classification: classification.to_string(),
             launch_year: launch_year,
@@ -176,7 +179,7 @@ impl TLE
             argument_of_perigee: argument_of_perigee,
             mean_anomaly: mean_anomaly,
             mean_motion: mean_motion
-        }
+        })
     }
 
     pub fn print_data(&self)

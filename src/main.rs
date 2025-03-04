@@ -23,7 +23,9 @@ pub fn run(tick_rate: Duration) -> io::Result<()> {
 
     let mut terminal = ratatui::init();
     // create app and run it
-    let app = App::new("SEQUISAT");
+    let mut app = App::new("SEQUISAT");
+    app.initialize();
+
     let app_result = run_app(&mut terminal, app, tick_rate);
 
     ratatui::restore();

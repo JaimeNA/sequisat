@@ -1,8 +1,10 @@
 use crate::App;
-
 use crate::PositionVector;
 use crate::Satellite;
-use crate::frontend::app::MessageType;
+use crate::frontend::app::{
+    MessageType,
+    Message
+};
 
 use ratatui::{
     style::{Style, Color, Modifier},
@@ -74,6 +76,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
 fn draw_title_bar(frame: &mut Frame, app: &App, area: Rect)
 {
+    // Divide title bar
     let layout = Layout::horizontal([Constraint::Min(0), Constraint::Length(43)]);
     let [title_area, tabs_area] = layout.areas(area);
 
@@ -101,7 +104,10 @@ fn draw_title_bar(frame: &mut Frame, app: &App, area: Rect)
     frame.render_widget(tabs, tabs_area);
 }
 
-// Main tabs 
+/*
+ * Main tabs - Display the data in two different projections and the information used for said
+ * projections. 
+*/
 
 fn draw_map_tab(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
 {
@@ -124,6 +130,7 @@ fn draw_map_tab(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
 
     frame.render_widget(map, chunks[0]);
 
+    // Make smaller chunks for diplay data
     let chunklin = Layout::default()
          .direction(Direction::Vertical)
          .constraints(
@@ -152,11 +159,11 @@ fn draw_azimuth_tab(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
          .split(area);
 
     let map = Canvas::default()
-    .block(Block::default().title("Azimuth").borders(Borders::ALL))
-    .paint(|ctx| paint_azimuth(ctx, sat, app))
-    .marker(symbols::Marker::Braille)
-    .x_bounds([-180.0, 180.0])
-    .y_bounds([-180.0, 180.0]);
+        .block(Block::default().title("Azimuth").borders(Borders::ALL))
+        .paint(|ctx| paint_azimuth(ctx, sat, app))
+        .marker(symbols::Marker::Braille)
+        .x_bounds([-180.0, 180.0])
+        .y_bounds([-180.0, 180.0]);
 
     frame.render_widget(map, chunks[0]);    
 
@@ -490,32 +497,38 @@ fn draw_tle_options(frame: &mut Frame, app: &App, area: Rect)
 }
 
 fn show_messages(frame: &mut Frame, app: &App){
-
-    let area = Rect::new(0, 0, POPUP_WIDTH, POPUP_HEIGHT).clamp(frame.area());
-
     let lst_msg = app.get_messages().last();
     if let Some(msg) = lst_msg {
-
-        let color = match msg.get_type() {
-            MessageType::Error => DARK_RED,
-            MessageType::Warning => AMBER,
-            MessageType::Info => GRAY,
-        };
-
-        let title = format!("Message {}: {}", app.get_messages().len(), msg.get_type().name());
-        let block = Block::default()
-        .title(title)
-        .borders(Borders::ALL)
-        .bg(color);
-    
-        let data = Paragraph::new(msg.get_message().clone())
-        .block(block)
-        .style(Style::default().fg(Color::White));
-    
-        frame.render_widget(Clear, area);  
-        frame.render_widget(data, area);   
+        draw_popup_message(frame, msg);
     }
     
+}
+
+fn draw_popup_message(frame: &mut Frame, msg: &Message) {
+
+    // Popups appear on the top-left corner
+    let area = Rect::new(0, 0, POPUP_WIDTH, POPUP_HEIGHT).clamp(frame.area());
+    
+    let color = match msg.get_type() {
+        MessageType::Error => DARK_RED,
+        MessageType::Warning => AMBER,
+        MessageType::Info => GRAY,
+    };
+
+    let title = format!("Message: {}", msg.get_type().name());
+    let block = Block::default()
+    .title(title)
+    .borders(Borders::ALL)
+    .bg(color);
+
+    let data = Paragraph::new(msg.get_message().clone())
+    .block(block)
+    .style(Style::default().fg(Color::White));
+
+    // Clear area before displaying
+    frame.render_widget(Clear, area);  
+    frame.render_widget(data, area);   
+
 }
 
 fn get_azimuth_and_elevation(usr_geodetic: &PositionVector, sat_geodetic: &PositionVector) -> PositionVector {

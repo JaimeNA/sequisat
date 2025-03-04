@@ -42,6 +42,8 @@ pub struct SDP4 {
 }
 
 impl Propagate for SGP4 {
+
+    // TODO: Separate into smaller functions and comment/document it
     fn initialize(&mut self)
     {
         self.recover_a02_n02();

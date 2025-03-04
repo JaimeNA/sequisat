@@ -139,6 +139,8 @@ impl<'a> App<'a> {
 
     const INPUT_ARG_ERROR: &'static str = "Invalid number of arguments";
     const INPUT_TYPE_ERROR: &'static str = "Invalid type";
+    const TLE_ERROR: &'static str = "No TLE files found";
+
 
     pub fn new(title: &'a str) -> Self {
         Self {
@@ -163,6 +165,19 @@ impl<'a> App<'a> {
     fn push_message(&mut self, msg: Message) {
         self.messages.push(msg);
     }
+
+    // Set initial state by selecting the first TLE, if no TLE is found sends error message
+    pub fn initialize(&mut self) {
+        if let Some(tle) = self.tle_list.items.first() {
+
+            // Create new sat, if its an error, push it into the error Vec
+            let sat = Satellite::new(tle).ok_or(|e| self.push_message(Message::new(MessageType::Error, e.to_string())));
+            self.sat = Some(sat);
+        } else {
+            self.push_message(Message::new(MessageType::Error, Self::TLE_ERROR.to_string()));
+        }
+    }
+
     pub fn get_sat(&self) -> Option<&Satellite> {
         self.sat.as_ref()
     }
@@ -198,10 +213,6 @@ impl<'a> App<'a> {
             },
             KeyCode::Char('c') => {
                 self.input_mode = true;
-            },
-            KeyCode::Char('f') => {
-               
-                self.push_message(Message::new(MessageType::Info, Self::get_tle_files().last().unwrap().to_string()));
             },
             KeyCode::Enter => self.pop_message(),
             _ => {}
