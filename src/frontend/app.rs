@@ -169,10 +169,7 @@ impl<'a> App<'a> {
     // Set initial state by selecting the first TLE, if no TLE is found sends error message
     pub fn initialize(&mut self) {
         if let Some(tle) = self.tle_list.items.first() {
-
-            // Create new sat, if its an error, push it into the error Vec
-            let sat = Satellite::new(tle).ok_or(|e| self.push_message(Message::new(MessageType::Error, e.to_string())));
-            self.sat = Some(sat);
+            self.set_sat(tle.to_string());            
         } else {
             self.push_message(Message::new(MessageType::Error, Self::TLE_ERROR.to_string()));
         }
@@ -191,11 +188,13 @@ impl<'a> App<'a> {
     }
 
     pub fn on_up(&mut self) {
-        self.sat = Some(Satellite::new(self.tle_list.previous()));
+        let tle = self.tle_list.previous().clone();
+        self.set_sat(tle);
     }
 
     pub fn on_down(&mut self) {
-        self.sat = Some(Satellite::new(self.tle_list.next()));
+        let tle = self.tle_list.previous().clone();
+        self.set_sat(tle);
     }
 
     pub fn on_right(&mut self) {
@@ -240,6 +239,17 @@ impl<'a> App<'a> {
             },
             KeyCode::Char(c) => self.buffer.push(c),
             _ => {}
+        }
+    }
+
+    fn set_sat(&mut self, tle: String) {
+        // Create new sat, if its an error, push it into the error Vec
+        let sat = Satellite::new(&tle);
+                    
+        if let Err(e) = sat {
+            self.push_message(Message::new(MessageType::Error, e.to_string()));
+        } else {
+            self.sat = sat.ok();
         }
     }
 
