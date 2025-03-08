@@ -193,7 +193,7 @@ impl<'a> App<'a> {
     }
 
     pub fn on_down(&mut self) {
-        let tle = self.tle_list.previous().clone();
+        let tle = self.tle_list.next().clone();
         self.set_sat(tle);
     }
 
