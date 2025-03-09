@@ -136,13 +136,14 @@ fn draw_map_tab(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
          .constraints(
              [
                  Constraint::Percentage(15),
-                 Constraint::Percentage(85)
+                 Constraint::Percentage(15),
+                 Constraint::Percentage(70)
              ].as_ref()
          )
          .split(chunks[1]);
     draw_sat_coords(frame, sat, chunklin[0]);
-    //draw_user_coords(frame, app, chunklin[1]);
-    draw_tle_options(frame, app, chunklin[1]);
+    draw_user_coords(frame, app, chunklin[1]);
+    draw_tle_options(frame, app, chunklin[2]);
 }
 
 fn draw_azimuth_tab(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
@@ -202,7 +203,7 @@ fn draw_about_tab(frame: &mut Frame, sat: &Satellite, app: &App, area: Rect)
             Span::styled(USAGE, Style::default().fg(Color::Gray)),
         ]),
         text::Line::from(vec![
-            Span::styled("By Jaime Nazar Anchorena - 2025", Style::default().fg(Color::Yellow)),
+            Span::styled("v1.0.1-unstable - By Jaime Nazar Anchorena - 2025", Style::default().fg(Color::Yellow)),
         ]),
     ];
 
